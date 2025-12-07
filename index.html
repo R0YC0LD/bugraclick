@@ -3,21 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON CLICKER: VOLATILITY</title>
+    <title>NEON CLICKER: BLACK MARKET</title>
     <style>
-        /* --- CSS BAŞLANGICI --- */
+        /* --- CSS --- */
         :root {
             --primary: #00f3ff;
             --secondary: #ff0055;
-            --success: #00ff6a; /* Yeşil renk eklendi */
+            --gold: #ffcc00; /* Para Rengi */
             --bg: #050505;
-            --grid: rgba(0, 243, 255, 0.1);
+            --glass: rgba(10, 20, 30, 0.95);
         }
 
         @font-face {
             font-family: 'Cyber';
             src: local('Courier New');
-            font-display: swap;
         }
 
         * {
@@ -38,22 +37,20 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            perspective: 1000px;
         }
 
-        /* Arkaplan Grid Efekti */
+        /* Arkaplan */
         .grid-bg {
             position: absolute;
             width: 200vw;
             height: 200vh;
             background-image: 
-                linear-gradient(var(--grid) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
             background-size: 50px 50px;
             transform: rotateX(60deg) translateY(-100px) translateZ(-200px);
             animation: gridScroll 20s linear infinite;
             z-index: -1;
-            opacity: 0.5;
         }
 
         @keyframes gridScroll {
@@ -61,364 +58,483 @@
             100% { transform: rotateX(60deg) translateY(50px) translateZ(-200px); }
         }
 
-        /* UI Katmanı */
+        /* UI */
         #ui-layer {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
             z-index: 10;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 20px;
         }
 
-        .hud-top {
+        .hud-row {
             display: flex;
             justify-content: space-between;
-            font-size: 1.2rem;
-            text-shadow: 0 0 10px var(--primary);
-            opacity: 0.8;
+            align-items: flex-start;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border: 1px solid var(--primary);
+            margin-bottom: 10px;
+            pointer-events: auto; /* Tıklanabilir */
         }
 
         .hud-bar {
-            width: 200px;
-            height: 10px;
-            background: #333;
+            width: 250px;
+            height: 12px;
+            background: #111;
             border: 1px solid var(--primary);
             margin-top: 5px;
             position: relative;
-            overflow: hidden;
         }
 
         .hud-fill {
             height: 100%;
             background: var(--primary);
             width: 0%;
-            transition: width 0.1s;
+            transition: width 0.2s;
             box-shadow: 0 0 10px var(--primary);
         }
 
-        /* Ana Sayaç */
-        #counter-container {
-            position: relative;
-            z-index: 5;
-            text-align: center;
-            transition: transform 0.05s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        #score {
-            font-size: 8rem;
+        #score-display {
+            font-size: 5rem;
             font-weight: 900;
-            background: linear-gradient(to bottom, #fff, #aaa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5));
-            letter-spacing: -5px;
-        }
-
-        #target-text {
-            color: var(--secondary);
-            font-size: 1.5rem;
-            letter-spacing: 5px;
-            margin-top: -10px;
-            opacity: 0.7;
-            text-transform: uppercase;
-        }
-
-        /* Canvas (Partiküller için) */
-        #fx-canvas {
+            text-align: center;
+            text-shadow: 0 0 20px rgba(255,255,255,0.2);
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            pointer-events: none;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            transition: 0.1s;
         }
 
-        /* Başlangıç ve Bitiş Ekranları */
-        .overlay-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(5, 5, 5, 0.95);
-            backdrop-filter: blur(10px);
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.5s;
-        }
-
-        .btn-start {
-            margin-top: 30px;
-            padding: 20px 50px;
-            background: transparent;
-            border: 2px solid var(--primary);
-            color: var(--primary);
-            font-family: 'Courier New', monospace;
+        #bits-display {
+            color: var(--gold);
+            text-shadow: 0 0 10px var(--gold);
             font-size: 1.5rem;
+        }
+
+        /* MARKET BUTONU & EKRANI */
+        #btn-shop {
+            pointer-events: auto;
+            background: black;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            padding: 10px 20px;
+            font-family: inherit;
             font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 3px;
+            font-size: 1.2rem;
             cursor: pointer;
-            position: relative;
-            overflow: hidden;
+            text-transform: uppercase;
             transition: 0.3s;
         }
-
-        .btn-start:hover {
-            background: var(--primary);
+        #btn-shop:hover {
+            background: var(--gold);
             color: black;
-            box-shadow: 0 0 30px var(--primary);
         }
 
-        .hidden {
-            opacity: 0;
-            pointer-events: none;
+        #shop-modal {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 600px;
+            background: var(--glass);
+            border: 2px solid var(--gold);
+            padding: 20px;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 50px rgba(255, 204, 0, 0.2);
         }
 
-        /* Glitch Efekti */
-        .glitch-active {
-            animation: glitch-anim 0.2s infinite;
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #333;
+            padding: 15px;
+            background: rgba(0,0,0,0.6);
+            transition: 0.2s;
+        }
+        
+        .shop-item:hover { border-color: var(--gold); }
+
+        .shop-info h3 { color: var(--gold); font-size: 1.2rem; margin-bottom: 5px; }
+        .shop-info p { color: #aaa; font-size: 0.8rem; }
+
+        .btn-buy {
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 10px;
+            cursor: pointer;
+            min-width: 100px;
+        }
+        .btn-buy:hover { background: var(--gold); color: black; }
+        .btn-buy:disabled { border-color: #555; color: #555; cursor: not-allowed; background: transparent; }
+
+        .close-shop {
+            position: absolute; top: 10px; right: 10px;
+            background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;
         }
 
-        @keyframes glitch-anim {
-            0% { transform: translate(0); }
-            20% { transform: translate(-5px, 5px); }
-            40% { transform: translate(-5px, -5px); }
-            60% { transform: translate(5px, 5px); }
-            80% { transform: translate(5px, -5px); }
-            100% { transform: translate(0); }
+        /* Overlay Ekranlar */
+        .overlay-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5,5,5,0.95);
+            z-index: 100;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
         }
+        
+        .hidden { display: none !important; }
 
-        /* Renkli Bildirim Yazıları (+1, CRITICAL vs) */
         .floating-text {
             position: absolute;
             font-weight: bold;
             font-size: 1.5rem;
             pointer-events: none;
             animation: floatUp 0.8s ease-out forwards;
-            text-shadow: 0 0 5px black;
         }
+        @keyframes floatUp { to { opacity: 0; transform: translateY(-80px); } }
 
-        @keyframes floatUp {
-            0% { opacity: 1; transform: translateY(0) scale(1); }
-            100% { opacity: 0; transform: translateY(-80px) scale(1.5); }
+        .btn-start {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            cursor: pointer;
+            font-family: inherit;
+            margin-top: 20px;
         }
+        .btn-start:hover { background: var(--primary); color: black; }
 
     </style>
 </head>
 <body>
 
     <div class="grid-bg"></div>
-    <canvas id="fx-canvas"></canvas>
-
+    
     <div id="ui-layer">
-        <div class="hud-top">
-            <div>
+        <div class="hud-row">
+            <div class="stat-box">
                 <div>SYSTEM INTEGRITY</div>
-                <div class="hud-bar"><div class="hud-fill" id="integrity-bar" style="width: 100%;"></div></div>
+                <div class="hud-bar"><div class="hud-fill" id="integrity-bar"></div></div>
+                <div style="font-size: 0.8rem; margin-top: 5px; color: var(--primary);">TARGET: 5000</div>
             </div>
-            <div style="text-align: right;">
-                <div id="combo-display">RISK: x1.0</div>
-                <div style="font-size: 0.8rem; color: #888;">VOLATILITY: HIGH</div>
+            
+            <div class="stat-box" style="text-align: right; border-color: var(--gold);">
+                <div id="bits-display">BITS: 0</div>
+                <div style="font-size: 0.8rem; color: #888;">CURRENCY</div>
+            </div>
+        </div>
+
+        <div class="hud-row" style="justify-content: flex-end; align-items: flex-end; height: 100%;">
+             <div style="text-align: right;">
+                <div id="risk-display" style="font-size: 1.5rem; color: white;">RISK: x1.0</div>
+                <button id="btn-shop" onclick="game.openShop()">OPEN MARKET</button>
             </div>
         </div>
     </div>
 
-    <div id="counter-container">
-        <div id="score">1000</div>
-        <div id="target-text">TARGET: 2500</div>
+    <div id="score-display">1000</div>
+
+    <div id="shop-modal" class="hidden">
+        <button class="close-shop" onclick="game.closeShop()">X</button>
+        <h2 style="color: var(--gold); text-align: center; margin-bottom: 20px;">/// BLACK MARKET</h2>
+        
+        <div class="shop-item">
+            <div class="shop-info">
+                <h3>OVERCLOCK CPU</h3>
+                <p>Tıklama başına daha fazla Integrity puanı.</p>
+                <p style="color: var(--primary);">Current Level: <span id="lvl-power">1</span></p>
+            </div>
+            <button class="btn-buy" id="btn-buy-power" onclick="game.buyUpgrade('power')">
+                250 BITS
+            </button>
+        </div>
+
+        <div class="shop-item">
+            <div class="shop-info">
+                <h3>FIREWALL v2.0</h3>
+                <p>Kötü tıklamalarda kaybedilen puanı azaltır.</p>
+                <p style="color: var(--success);">Defense: <span id="lvl-def">0%</span></p>
+            </div>
+            <button class="btn-buy" id="btn-buy-def" onclick="game.buyUpgrade('defense')">
+                400 BITS
+            </button>
+        </div>
+
+        <div class="shop-item">
+            <div class="shop-info">
+                <h3>CRYPTO MINER</h3>
+                <p>Her tıklamada daha fazla BITS kazandırır.</p>
+                <p style="color: var(--gold);">Multiplier: x<span id="lvl-income">1.0</span></p>
+            </div>
+            <button class="btn-buy" id="btn-buy-income" onclick="game.buyUpgrade('income')">
+                300 BITS
+            </button>
+        </div>
     </div>
 
     <div id="start-screen" class="overlay-screen">
-        <h1 style="font-size: 3rem; color: var(--primary); text-shadow: 0 0 20px var(--primary);">NEON CLICKER</h1>
-        <p style="margin-top: 10px; opacity: 0.7;">STATUS: UNSTABLE</p>
-        <button class="btn-start" onclick="game.start()">INITIALIZE</button>
+        <h1 style="color: var(--primary); font-size: 3rem; text-shadow: 0 0 20px var(--primary);">NEON HACKER</h1>
+        <p>Market Update Loaded.</p>
+        <button class="btn-start" onclick="game.start()">CONNECT</button>
     </div>
 
     <div id="end-screen" class="overlay-screen hidden">
-        <h1 id="end-title" style="font-size: 4rem; color: var(--secondary);">SYSTEM CRASH</h1>
-        <p id="end-reason" style="font-size: 1.2rem; margin-top: 10px;">Market collapsed.</p>
-        <button class="btn-start" onclick="game.restart()">REBOOT SYSTEM</button>
+        <h1 id="end-title" style="font-size: 4rem;">GAME OVER</h1>
+        <p id="end-reason">Connection Lost.</p>
+        <button class="btn-start" onclick="game.restart()">RETRY</button>
     </div>
 
     <script>
-        /* --- SES MOTORU --- */
         class SoundEngine {
             constructor() {
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)();
             }
-
-            playTone(freq, type) {
+            play(type) {
                 if (this.ctx.state === 'suspended') this.ctx.resume();
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 
-                osc.type = type;
-                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(freq / 2, this.ctx.currentTime + 0.1);
-                
+                if (type === 'coin') {
+                    osc.frequency.setValueAtTime(1000, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(2000, this.ctx.currentTime + 0.1);
+                    osc.type = 'sine';
+                } else if (type === 'buy') {
+                    osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(800, this.ctx.currentTime + 0.1);
+                    osc.type = 'square';
+                } else if (type === 'hit') {
+                    osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                    osc.type = 'triangle';
+                } else { // loss
+                    osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                    osc.type = 'sawtooth';
+                }
+
                 gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
 
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start();
-                osc.stop(this.ctx.currentTime + 0.1);
-            }
-
-            playGain() { this.playTone(1200, 'sine'); } // İnce ses
-            playLoss() { this.playTone(300, 'square'); } // Kalın, bozuk ses
-        }
-
-        /* --- PARÇACIK SİSTEMİ --- */
-        class ParticleSystem {
-            constructor() {
-                this.canvas = document.getElementById('fx-canvas');
-                this.ctx = this.canvas.getContext('2d');
-                this.particles = [];
-                this.resize();
-                window.addEventListener('resize', () => this.resize());
-                this.animate();
-            }
-
-            resize() {
-                this.canvas.width = window.innerWidth;
-                this.canvas.height = window.innerHeight;
-            }
-
-            spawn(x, y, count = 10, color = '#00f3ff') {
-                for (let i = 0; i < count; i++) {
-                    this.particles.push({
-                        x: x,
-                        y: y,
-                        vx: (Math.random() - 0.5) * 15, // Daha hızlı patlama
-                        vy: (Math.random() - 0.5) * 15,
-                        life: 1.0,
-                        color: color,
-                        size: Math.random() * 4 + 1
-                    });
-                }
-            }
-
-            animate() {
-                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                for (let i = 0; i < this.particles.length; i++) {
-                    let p = this.particles[i];
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.life -= 0.03;
-                    p.vy += 0.5; 
-                    this.ctx.globalAlpha = p.life;
-                    this.ctx.fillStyle = p.color;
-                    this.ctx.beginPath();
-                    this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                    this.ctx.fill();
-                    if (p.life <= 0) {
-                        this.particles.splice(i, 1);
-                        i--;
-                    }
-                }
-                this.ctx.globalAlpha = 1;
-                requestAnimationFrame(() => this.animate());
+                osc.stop(this.ctx.currentTime + 0.15);
             }
         }
 
-        /* --- OYUN MOTORU --- */
-        class GameEngine {
+        class Game {
             constructor() {
-                this.score = 1000;
-                this.combo = 1.0;
-                this.isPlaying = false;
                 this.audio = new SoundEngine();
-                this.particles = new ParticleSystem();
-                
-                this.ui = {
-                    score: document.getElementById('score'),
-                    startScreen: document.getElementById('start-screen'),
-                    endScreen: document.getElementById('end-screen'),
-                    counterContainer: document.getElementById('counter-container'),
-                    combo: document.getElementById('combo-display'),
-                    bar: document.getElementById('integrity-bar'),
-                    body: document.body
+                this.integrity = 1000;
+                this.bits = 0;
+                this.risk = 1.0;
+                this.isPlaying = false;
+                this.target = 5000;
+                this.isShopOpen = false;
+
+                // Market & Yetenek Değişkenleri
+                this.stats = {
+                    power: 1.0,         // Tıklama Gücü Çarpanı
+                    defense: 0.0,       // Risk Defansı (%0 - %80 arası)
+                    incomeMult: 1.0     // Para Kazanma Çarpanı
                 };
 
-                document.addEventListener('mousedown', (e) => this.handleClick(e));
-                document.addEventListener('touchstart', (e) => this.handleClick(e.touches[0]), {passive: false});
+                this.prices = {
+                    power: 250,
+                    defense: 400,
+                    income: 300
+                };
+
+                // UI Referansları
+                this.ui = {
+                    score: document.getElementById('score-display'),
+                    bar: document.getElementById('integrity-bar'),
+                    bits: document.getElementById('bits-display'),
+                    risk: document.getElementById('risk-display'),
+                    shop: document.getElementById('shop-modal'),
+                    
+                    // Butonlar
+                    btnPower: document.getElementById('btn-buy-power'),
+                    btnDef: document.getElementById('btn-buy-def'),
+                    btnIncome: document.getElementById('btn-buy-income'),
+                    
+                    // Label'lar
+                    lblPower: document.getElementById('lvl-power'),
+                    lblDef: document.getElementById('lvl-def'),
+                    lblIncome: document.getElementById('lvl-income')
+                };
+
+                document.addEventListener('mousedown', (e) => {
+                    // Eğer market açıksa veya butonlara basılıyorsa tıklama sayma
+                    if (this.isShopOpen || e.target.tagName === 'BUTTON' || e.target.closest('#shop-modal')) return;
+                    this.click(e);
+                });
             }
 
             start() {
-                this.score = 1000;
-                this.combo = 1.0;
+                this.integrity = 1000;
+                this.bits = 200; // Başlangıç parası (Hediye)
+                this.risk = 1.0;
                 this.isPlaying = true;
-                this.ui.startScreen.classList.add('hidden');
-                this.ui.endScreen.classList.add('hidden');
+                
+                // Statları sıfırla
+                this.stats = { power: 1.0, defense: 0.0, incomeMult: 1.0 };
+                this.prices = { power: 250, defense: 400, income: 300 };
+                
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('end-screen').classList.add('hidden');
                 this.updateUI();
-                this.audio.playGain();
+                this.updateShopUI();
             }
 
-            restart() {
-                this.start();
-                this.ui.body.style.backgroundColor = "#050505";
-                document.getElementById('end-title').style.color = "#ff0055";
-            }
+            restart() { this.start(); }
 
-            handleClick(e) {
+            click(e) {
                 if (!this.isPlaying) return;
 
-                this.combo += 0.05; // Combo yavaş artar
-                this.shakeScreen();
+                // 1. Risk Hesaplama
+                this.risk += 0.05;
+                if (this.risk > 4.0) this.risk = 4.0; // Maksimum risk sınırı
 
-                // --- YENİ ALGORİTMA: RİSKLİ YÜKSELİŞ ---
-                // %65 Şansla Kazan, %35 Şansla Kaybet
-                // Combo arttıkça, Kayıp miktarı Kazanç miktarından çok daha fazla büyür.
+                // 2. Şans Faktörü (%70 Şans)
+                const isSuccess = Math.random() > 0.30;
                 
-                const isLucky = Math.random() > 0.35; 
+                // Temel Değerler
+                let basePoints = Math.floor(Math.random() * 20 + 10); // 10-30 arası puan
+                let baseBits = Math.floor(Math.random() * 10 + 5);    // 5-15 arası para
 
-                if (isLucky) {
-                    // KAZANÇ (Yeşil)
-                    // 5 ile 15 arası puan * (Combo'nun yarısı kadar çarpan)
-                    let gain = Math.floor((Math.random() * 10 + 5) * (1 + this.combo * 0.2));
-                    this.score += gain;
+                if (isSuccess) {
+                    // --- KAZANÇ ---
+                    // Formül: (Baz * Risk * Güçlendirme)
+                    let pointsGain = Math.floor(basePoints * this.risk * this.stats.power);
                     
-                    this.audio.playGain();
-                    this.particles.spawn(e.clientX, e.clientY, 8, '#00ff6a'); // Yeşil Partikül
-                    this.showFloatingText(e.clientX, e.clientY, `+${gain}`, '#00ff6a');
+                    // Para her zaman kazanılır ama başarılı tıklamada daha çok
+                    let bitsGain = Math.floor(baseBits * this.risk * this.stats.incomeMult);
+
+                    this.integrity += pointsGain;
+                    this.bits += bitsGain;
+                    
+                    this.audio.play('hit');
+                    this.floatText(e.clientX, e.clientY, `+${pointsGain}`, '#00f3ff');
+                    this.floatText(e.clientX + 30, e.clientY - 20, `+${bitsGain} BITS`, '#ffcc00');
+
                 } else {
-                    // KAYIP (Kırmızı - Troll Kısmı)
-                    // 10 ile 30 arası puan * (Combo'nun TAMAMI kadar çarpan)
-                    // Combo yükseldikçe düşüşler çok can yakar.
-                    let loss = Math.floor((Math.random() * 20 + 10) * this.combo);
+                    // --- KAYIP ---
+                    // Defans, kaybı azaltır (Defense 0.5 ise hasarın yarısını emer)
+                    let pointsLoss = Math.floor((basePoints * 1.5) * this.risk);
                     
-                    // Nadiren (%10 şans) KRİTİK HATA (Çok büyük düşüş)
-                    if (Math.random() > 0.9) {
-                        loss *= 2.5; 
-                        this.showFloatingText(e.clientX, e.clientY, "CRITICAL ERROR", '#ff0055');
-                        this.ui.body.classList.add('glitch-active');
-                        setTimeout(() => this.ui.body.classList.remove('glitch-active'), 300);
-                    }
+                    // Defans Uygula
+                    let mitigatedLoss = Math.floor(pointsLoss * (1 - this.stats.defense));
+                    
+                    this.integrity -= mitigatedLoss;
+                    
+                    // Kayıp durumunda da azıcık para verelim (Teselli)
+                    let pityBits = Math.floor((baseBits / 2) * this.stats.incomeMult);
+                    this.bits += pityBits;
 
-                    this.score -= Math.floor(loss);
-                    
-                    this.audio.playLoss();
-                    this.particles.spawn(e.clientX, e.clientY, 15, '#ff0055'); // Kırmızı Partikül
-                    this.showFloatingText(e.clientX, e.clientY, `-${Math.floor(loss)}`, '#ff0055');
+                    this.audio.play('loss');
+                    this.floatText(e.clientX, e.clientY, `-${mitigatedLoss}`, '#ff0055');
                 }
 
+                this.animateScore();
                 this.updateUI();
-                this.checkGameState();
+                this.checkGame();
             }
 
-            showFloatingText(x, y, text, color) {
+            openShop() {
+                this.isShopOpen = true;
+                this.ui.shop.classList.remove('hidden');
+                this.updateShopUI();
+            }
+
+            closeShop() {
+                this.isShopOpen = false;
+                this.ui.shop.classList.add('hidden');
+            }
+
+            buyUpgrade(type) {
+                let price = this.prices[type];
+                if (this.bits >= price) {
+                    this.bits -= price;
+                    this.audio.play('buy');
+
+                    // Özelliği geliştir ve fiyatı arttır
+                    if (type === 'power') {
+                        this.stats.power += 0.5; // %50 güç artışı
+                        this.prices.power = Math.floor(this.prices.power * 1.5);
+                    } else if (type === 'defense') {
+                        if (this.stats.defense < 0.8) { // Max %80 defans
+                            this.stats.defense += 0.1; // %10 defans artışı
+                            this.prices.defense = Math.floor(this.prices.defense * 1.6);
+                        }
+                    } else if (type === 'income') {
+                        this.stats.incomeMult += 0.5; // Para kazanma artışı
+                        this.prices.income = Math.floor(this.prices.income * 1.4);
+                    }
+
+                    this.updateUI();
+                    this.updateShopUI();
+                }
+            }
+
+            updateUI() {
+                this.ui.score.innerText = this.integrity;
+                this.ui.bits.innerText = `BITS: ${this.bits}`;
+                this.ui.risk.innerText = `RISK: x${this.risk.toFixed(2)}`;
+
+                let percent = (this.integrity / this.target) * 100;
+                this.ui.bar.style.width = Math.max(0, Math.min(100, percent)) + "%";
+
+                // Bar Rengi
+                if (this.integrity < 500) this.ui.bar.style.backgroundColor = '#ff0055'; // Kritik
+                else if (this.integrity > 4000) this.ui.bar.style.backgroundColor = '#00ff6a'; // Bitmeye yakın
+                else this.ui.bar.style.backgroundColor = '#00f3ff';
+            }
+
+            updateShopUI() {
+                // Button Textleri (Fiyatlar)
+                this.ui.btnPower.innerText = `${this.prices.power} BITS`;
+                this.ui.btnIncome.innerText = `${this.prices.income} BITS`;
+                
+                // Defans max kontrolü
+                if (this.stats.defense >= 0.8) {
+                    this.ui.btnDef.innerText = "MAX";
+                    this.ui.btnDef.disabled = true;
+                } else {
+                    this.ui.btnDef.innerText = `${this.prices.defense} BITS`;
+                    this.ui.btnDef.disabled = this.bits < this.prices.defense;
+                }
+
+                // Butonların aktiflik durumu
+                this.ui.btnPower.disabled = this.bits < this.prices.power;
+                this.ui.btnIncome.disabled = this.bits < this.prices.income;
+
+                // Level Textleri
+                this.ui.lblPower.innerText = `x${this.stats.power.toFixed(1)}`;
+                this.ui.lblDef.innerText = `%${(this.stats.defense * 100).toFixed(0)}`;
+                this.ui.lblIncome.innerText = `x${this.stats.incomeMult.toFixed(1)}`;
+            }
+
+            animateScore() {
+                this.ui.score.style.transform = `translate(-50%, -50%) scale(${1 + Math.random()*0.1})`;
+                setTimeout(() => {
+                    this.ui.score.style.transform = `translate(-50%, -50%) scale(1)`;
+                }, 50);
+            }
+
+            floatText(x, y, text, color) {
                 const el = document.createElement('div');
                 el.className = 'floating-text';
                 el.innerText = text;
@@ -429,61 +545,34 @@
                 setTimeout(() => el.remove(), 800);
             }
 
-            shakeScreen() {
-                const intensity = Math.min(this.combo, 5); // Titreme şiddetini sınırla
-                this.ui.counterContainer.style.transform = `scale(${1 + Math.random() * 0.05}) rotate(${Math.random() * intensity - (intensity/2)}deg)`;
-                setTimeout(() => {
-                    this.ui.counterContainer.style.transform = 'scale(1) rotate(0deg)';
-                }, 50);
-            }
-
-            updateUI() {
-                this.ui.score.innerText = this.score;
-                this.ui.combo.innerText = `RISK: x${this.combo.toFixed(2)}`;
-                
-                // Bar artık 2500 puana göre doluyor
-                let percent = Math.max(0, (this.score / 2500) * 100);
-                this.ui.bar.style.width = `${percent}%`;
-                
-                if (this.score > 1500) this.ui.bar.style.backgroundColor = '#00ff6a'; // Kazanmaya yakınsa yeşil
-                else if (this.score < 500) this.ui.bar.style.backgroundColor = '#ff0055'; // Kaybetmeye yakınsa kırmızı
-                else this.ui.bar.style.backgroundColor = '#00f3ff'; // Normal mavi
-            }
-
-            checkGameState() {
-                if (this.score >= 2500) {
-                    this.endGame(true);
-                } else if (this.score <= 0) {
-                    this.score = 0;
-                    this.updateUI();
-                    this.endGame(false);
+            checkGame() {
+                if (this.integrity >= this.target) {
+                    this.end(true);
+                } else if (this.integrity <= 0) {
+                    this.integrity = 0;
+                    this.end(false);
                 }
             }
 
-            endGame(win) {
+            end(win) {
                 this.isPlaying = false;
-                this.ui.endScreen.classList.remove('hidden');
-                
+                document.getElementById('end-screen').classList.remove('hidden');
+                const title = document.getElementById('end-title');
+                const reason = document.getElementById('end-reason');
+
                 if (win) {
-                    document.getElementById('end-title').innerText = "SYSTEM HACKED";
-                    document.getElementById('end-reason').innerText = "Impossible achieved.";
-                    this.ui.body.style.backgroundColor = "#00ff00";
+                    title.innerText = "SYSTEM HACKED";
+                    title.style.color = "#00ff6a";
+                    reason.innerText = `Başarıyla sızdın! Toplam BITS: ${this.bits}`;
                 } else {
-                    document.getElementById('end-title').innerText = "SYSTEM CRASH";
-                    const reasons = [
-                        "Volatilite çok yüksekti.",
-                        "Borsa çöktü, puanların eridi.",
-                        "Risk yönetimin zayıf.",
-                        "Daha istikrarlı tıklamalıydın.",
-                        "CPU Overheating..."
-                    ];
-                    document.getElementById('end-reason').innerText = reasons[Math.floor(Math.random() * reasons.length)];
-                    this.ui.body.style.backgroundColor = "#220000";
+                    title.innerText = "CONNECTION LOST";
+                    title.style.color = "#ff0055";
+                    reason.innerText = "Sinyal koptu. Sistem seni attı.";
                 }
             }
         }
 
-        const game = new GameEngine();
+        const game = new Game();
     </script>
 </body>
 </html>
