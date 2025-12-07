@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON HACKER: HARDCORE</title>
+    <title>NEON HACKER: BALANCED</title>
     <style>
         /* --- GÖRSEL TASARIM (CSS) --- */
         :root {
@@ -16,7 +16,7 @@
 
         @font-face {
             font-family: 'Cyber';
-            src: local('Courier New'); /* Sistem fontu yedeği */
+            src: local('Courier New');
         }
 
         * {
@@ -40,15 +40,15 @@
             align-items: center;
         }
 
-        /* CRT Tarama Çizgisi Efekti (Retro Görünüm) */
+        /* CRT Tarama Çizgisi Efekti */
         .scanlines {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
             background-size: 100% 4px;
             z-index: 90;
             pointer-events: none;
-            opacity: 0.6;
+            opacity: 0.4;
         }
 
         /* Hareketli Arka Plan */
@@ -56,11 +56,11 @@
             position: absolute;
             width: 200vw; height: 200vh;
             background-image: 
-                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
             background-size: 60px 60px;
             transform: rotateX(60deg) translateY(-100px) translateZ(-200px);
-            animation: gridScroll 15s linear infinite;
+            animation: gridScroll 20s linear infinite;
             z-index: -1;
         }
         @keyframes gridScroll {
@@ -89,6 +89,7 @@
             min-width: 150px;
             box-shadow: 0 0 15px rgba(0,0,0,0.8);
             backdrop-filter: blur(5px);
+            transition: border-color 0.3s;
         }
         .stat-label { font-size: 0.7rem; color: #888; letter-spacing: 2px; }
         .stat-value { font-size: 1.2rem; color: white; text-shadow: 0 0 5px var(--primary); }
@@ -96,7 +97,7 @@
 
         /* Sağlık Barı */
         .integrity-container {
-            width: 300px; height: 8px; background: #222;
+            width: 300px; height: 10px; background: #222;
             margin-top: 5px; border: 1px solid #444; position: relative;
         }
         .integrity-fill {
@@ -123,23 +124,26 @@
 
         /* Market Butonu */
         #btn-market {
-            background: black; border: 1px solid var(--gold); color: var(--gold);
-            padding: 12px 25px; cursor: pointer; font-size: 1rem;
+            background: black; border: 2px solid var(--gold); color: var(--gold);
+            padding: 12px 25px; cursor: pointer; font-size: 1rem; font-weight: bold;
             text-transform: uppercase; letter-spacing: 2px; transition: 0.3s;
             pointer-events: auto;
+            animation: pulseGold 2s infinite;
         }
         #btn-market:hover { background: var(--gold); color: black; box-shadow: 0 0 20px var(--gold); }
+        
+        @keyframes pulseGold { 0% { box-shadow: 0 0 5px var(--gold); } 50% { box-shadow: 0 0 15px var(--gold); } 100% { box-shadow: 0 0 5px var(--gold); } }
 
         /* MARKET MENÜSÜ */
         #market-modal {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 90%; max-width: 500px;
+            width: 90%; max-width: 550px;
             background: var(--glass);
-            border: 2px solid var(--danger);
+            border: 2px solid var(--primary);
             padding: 25px; z-index: 50;
             display: none; flex-direction: column; gap: 15px;
-            box-shadow: 0 0 100px rgba(255, 0, 64, 0.3);
+            box-shadow: 0 0 100px rgba(0, 243, 255, 0.2);
         }
         #market-modal.active { display: flex; }
 
@@ -154,12 +158,13 @@
         .item-row {
             display: flex; justify-content: space-between; align-items: center;
             background: rgba(255,255,255,0.05); padding: 15px; border: 1px solid #333;
+            transition: 0.2s;
         }
-        .item-row:hover { border-color: var(--gold); }
+        .item-row:hover { border-color: var(--gold); background: rgba(255,255,255,0.08); }
         
         .buy-btn {
             background: transparent; border: 1px solid var(--gold); color: var(--gold);
-            padding: 8px 15px; cursor: pointer; min-width: 110px; font-size: 0.9rem;
+            padding: 8px 15px; cursor: pointer; min-width: 120px; font-size: 0.9rem; font-weight: bold;
         }
         .buy-btn:hover { background: var(--gold); color: black; }
         .buy-btn:disabled { border-color: #444; color: #444; cursor: not-allowed; background: transparent; }
@@ -167,15 +172,15 @@
         /* Başlangıç / Bitiş Ekranları */
         .overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.96); z-index: 100;
+            background: rgba(5,5,5,0.96); z-index: 100;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             transition: opacity 0.5s;
         }
         .hidden { opacity: 0; pointer-events: none; }
 
         .glitch-text {
-            font-size: 3.5rem; color: var(--danger); text-transform: uppercase;
-            text-shadow: 2px 2px var(--primary); position: relative;
+            font-size: 3.5rem; color: var(--primary); text-transform: uppercase;
+            text-shadow: 0 0 20px var(--primary); position: relative;
         }
         
         .start-btn {
@@ -186,15 +191,14 @@
         .start-btn:hover { background: var(--primary); color: black; box-shadow: 0 0 30px var(--primary); }
 
         /* Animasyonlar */
-        @keyframes floatText { 0% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(-50px); } }
-        .floating-text { position: absolute; font-size: 1.2rem; pointer-events: none; animation: floatText 1s forwards; text-shadow: 0 0 5px black; }
+        @keyframes floatText { 
+            0% { opacity:1; transform:translateY(0) scale(1); } 
+            100% { opacity:0; transform:translateY(-80px) scale(1.2); } 
+        }
+        .floating-text { position: absolute; font-size: 1.5rem; pointer-events: none; animation: floatText 0.8s forwards; text-shadow: 0 0 5px black; font-weight: bold; }
 
-        /* Ekran Titreme & Glitch Sınıfları */
-        .shake-heavy { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
-        @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(4px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-6px, 0, 0); } 40%, 60% { transform: translate3d(6px, 0, 0); } }
-
-        .crt-flicker { animation: flicker 0.15s infinite; }
-        @keyframes flicker { 0% { opacity: 0.95; } 50% { opacity: 1; } 100% { opacity: 0.9; } }
+        .shake { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
 
     </style>
 </head>
@@ -206,7 +210,7 @@
     <div id="ui-layer">
         <div class="hud-top">
             <div class="stat-box">
-                <div class="stat-label">SİSTEM BÜTÜNLÜĞÜ</div>
+                <div class="stat-label">SİSTEM BÜTÜNLÜĞÜ (HP)</div>
                 <div class="integrity-container">
                     <div class="integrity-fill" id="hp-bar"></div>
                 </div>
@@ -220,66 +224,66 @@
         </div>
 
         <div class="hud-bottom">
-            <div class="stat-box" style="border-color: var(--danger);">
+            <div class="stat-box" id="risk-box" style="border-color: var(--primary);">
                 <div class="stat-label">TEHLİKE SEVİYESİ</div>
-                <div class="stat-value danger-text" id="risk-display">RISK: x1.00</div>
-                <div style="font-size: 0.7rem; color: #666;">HER SANİYE ARTAR</div>
+                <div class="stat-value" id="risk-display">RISK: x1.00</div>
+                <div style="font-size: 0.7rem; color: #888;">YAVAŞ ARTAR</div>
             </div>
 
-            <button id="btn-market" onclick="game.toggleMarket()">KARA BORSA</button>
+            <button id="btn-market" onclick="game.toggleMarket()">MARKETİ AÇ</button>
         </div>
     </div>
 
     <div id="center-score">
         <div id="score-val">0</div>
-        <div id="high-score-label">REKOR: <span id="best-score">0</span></div>
+        <div id="high-score-label">EN İYİ SKOR: <span id="best-score">0</span></div>
     </div>
 
     <div id="market-modal">
         <div class="market-header">
-            <h2 style="color: var(--danger);">/// DARK WEB MARKET</h2>
+            <h2 style="color: var(--gold);">/// SİBER MARKET</h2>
             <button class="close-btn" onclick="game.toggleMarket()">X</button>
         </div>
 
         <div class="item-row">
             <div>
-                <div style="color: var(--primary);">CPU OVERCLOCK</div>
-                <div style="font-size: 0.7rem; color: #aaa;">Puan kazancını arttırır.</div>
-                <div style="font-size: 0.8rem; color: white;">Level: <span id="lvl-cpu">1</span></div>
+                <div style="color: var(--primary); font-size: 1.1rem;">CPU OVERCLOCK</div>
+                <div style="font-size: 0.7rem; color: #aaa;">Tıklama başına puan kazancını arttırır.</div>
+                <div style="font-size: 0.8rem; color: white;">Seviye: <span id="lvl-cpu">1</span></div>
             </div>
-            <button class="buy-btn" id="btn-cpu" onclick="game.buy('cpu')">500 BIT</button>
+            <button class="buy-btn" id="btn-cpu" onclick="game.buy('cpu')">250 BIT</button>
         </div>
 
         <div class="item-row">
             <div>
-                <div style="color: var(--success); color: #00ff6a;">FIREWALL v3.0</div>
-                <div style="font-size: 0.7rem; color: #aaa;">Hatalı tıklama hasarını azaltır.</div>
-                <div style="font-size: 0.8rem; color: white;">Defans: %<span id="lvl-def">0</span></div>
+                <div style="color: #00ff6a; font-size: 1.1rem;">GÜVENLİK DUVARI</div>
+                <div style="font-size: 0.7rem; color: #aaa;">Hatalı tıklamalarda can kaybını azaltır.</div>
+                <div style="font-size: 0.8rem; color: white;">Koruma: %<span id="lvl-def">0</span></div>
             </div>
-            <button class="buy-btn" id="btn-def" onclick="game.buy('def')">750 BIT</button>
+            <button class="buy-btn" id="btn-def" onclick="game.buy('def')">350 BIT</button>
         </div>
 
         <div class="item-row">
             <div>
-                <div style="color: var(--gold);">VERİ MADENCİSİ</div>
-                <div style="font-size: 0.7rem; color: #aaa;">Bit düşme şansını arttırır.</div>
+                <div style="color: var(--gold); font-size: 1.1rem;">BİT MADENCİSİ</div>
+                <div style="font-size: 0.7rem; color: #aaa;">Para (Bit) bulma şansını arttırır.</div>
                 <div style="font-size: 0.8rem; color: white;">Şans: x<span id="lvl-luck">1.0</span></div>
             </div>
-            <button class="buy-btn" id="btn-luck" onclick="game.buy('luck')">1000 BIT</button>
+            <button class="buy-btn" id="btn-luck" onclick="game.buy('luck')">300 BIT</button>
         </div>
     </div>
 
     <div id="start-screen" class="overlay">
         <h1 class="glitch-text">NEON HACKER</h1>
-        <p style="color: #888; margin-top: 10px; letter-spacing: 2px;">GÖREV: SİSTEM ÇÖKENE KADAR VERİ ÇAL</p>
-        <button class="start-btn" onclick="game.start()">BAĞLANTI KUR</button>
+        <p style="color: #888; margin-top: 10px; letter-spacing: 2px;">VERİ ÇALMA SİMÜLASYONU</p>
+        <button class="start-btn" onclick="game.start()">BAŞLAT</button>
     </div>
 
     <div id="end-screen" class="overlay hidden">
-        <h1 class="glitch-text" style="color: var(--danger);">SİSTEM ÇÖKTÜ</h1>
+        <h1 class="glitch-text" style="color: var(--danger);">BAĞLANTI KOPTU</h1>
         <p style="font-size: 1.5rem; margin: 20px 0;">TOPLAM PUAN: <span id="end-score" style="color: white;">0</span></p>
-        <p style="color: #666; font-size: 0.9rem;">RİSK ÇOK YÜKSELDİ.</p>
-        <button class="start-btn" onclick="game.restart()">YENİDEN BAŞLAT</button>
+        <p style="color: #666; font-size: 0.9rem;">SİSTEM SAVUNMASI SENİ YAKALADI.</p>
+        <button class="start-btn" onclick="game.restart()">TEKRAR DENE</button>
     </div>
 
     <script>
@@ -291,24 +295,31 @@
             const gain = audioCtx.createGain();
             const now = audioCtx.currentTime;
 
-            if (type === 'hit') { // Başarılı Tık
+            if (type === 'hit') { 
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, now);
-                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-                gain.gain.setValueAtTime(0.1, now);
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+                gain.gain.setValueAtTime(0.05, now); // Ses biraz kısıldı
                 gain.gain.linearRampToValueAtTime(0, now + 0.1);
                 osc.start(now); osc.stop(now + 0.1);
-            } else if (type === 'fail') { // Hatalı Tık
+            } else if (type === 'coin') { // Para sesi eklendi
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, now);
+                osc.frequency.linearRampToValueAtTime(1800, now + 0.1);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'fail') { 
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(100, now);
-                osc.frequency.linearRampToValueAtTime(50, now + 0.3);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.3);
-                osc.start(now); osc.stop(now + 0.3);
-            } else if (type === 'buy') { // Satın Alma
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'buy') { 
                 osc.type = 'square';
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.linearRampToValueAtTime(800, now + 0.15);
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(600, now + 0.15);
                 gain.gain.setValueAtTime(0.1, now);
                 gain.gain.linearRampToValueAtTime(0, now + 0.15);
                 osc.start(now); osc.stop(now + 0.15);
@@ -321,7 +332,7 @@
         class GameEngine {
             constructor() {
                 this.score = 0;
-                this.highScore = localStorage.getItem('neon_highscore') || 0;
+                this.highScore = localStorage.getItem('neon_balanced_highscore') || 0;
                 this.bits = 0;
                 this.hp = 1000;
                 this.maxHp = 1000;
@@ -332,14 +343,14 @@
                 // Yükseltmeler
                 this.stats = {
                     cpu: 1.0,   // Puan Çarpanı
-                    def: 0.0,   // Defans (%0 - %60)
+                    def: 0.0,   // Defans (%0 - %70)
                     luck: 1.0   // Bit Şansı
                 };
                 
-                // Acımasız Fiyatlar
-                this.prices = { cpu: 500, def: 750, luck: 1000 };
+                // DENGELİ FİYATLAR (Daha ulaşılabilir)
+                this.prices = { cpu: 250, def: 350, luck: 300 };
 
-                // UI Elementleri
+                // UI Referansları
                 this.ui = {
                     score: document.getElementById('score-val'),
                     best: document.getElementById('best-score'),
@@ -347,12 +358,11 @@
                     hpText: document.getElementById('hp-text'),
                     bits: document.getElementById('bit-display'),
                     risk: document.getElementById('risk-display'),
+                    riskBox: document.getElementById('risk-box'),
                     endScore: document.getElementById('end-score'),
                     startScreen: document.getElementById('start-screen'),
                     endScreen: document.getElementById('end-screen'),
                     modal: document.getElementById('market-modal'),
-                    
-                    // Market Butonları
                     btnCpu: document.getElementById('btn-cpu'),
                     btnDef: document.getElementById('btn-def'),
                     btnLuck: document.getElementById('btn-luck'),
@@ -373,18 +383,21 @@
             start() {
                 this.score = 0;
                 this.hp = 1000;
+                this.bits = 50; // Başlangıç harçlığı
                 this.risk = 1.0;
                 this.active = true;
+                this.stats = { cpu: 1.0, def: 0.0, luck: 1.0 }; // Reset
+                this.prices = { cpu: 250, def: 350, luck: 300 }; // Reset
+                
                 this.ui.startScreen.classList.add('hidden');
                 this.ui.endScreen.classList.add('hidden');
-                document.body.classList.remove('crt-flicker');
 
-                // ZAMAN BASKISI: Her saniye risk artar!
+                // ZAMAN BASKISI: YAVAŞLATILDI
                 if (this.timer) clearInterval(this.timer);
                 this.timer = setInterval(() => {
                     if(!this.active) return;
-                    // Risk her saniye 0.05 artar. Sınır yok!
-                    this.risk += 0.05;
+                    // Risk her saniye SADECE 0.02 artar (Önceki 0.05 idi)
+                    this.risk += 0.02;
                     this.updateUI();
                 }, 1000);
 
@@ -395,47 +408,47 @@
             restart() { this.start(); }
 
             click(e) {
-                // Tıklama başına ekstra risk (hızlı tıklarsan risk fırlar)
-                this.risk += 0.01;
+                // Tıklama başına ekstra risk AZALTILDI (0.01 -> 0.005)
+                this.risk += 0.005;
 
-                // Zorlaştırılmış Başarı Şansı: Risk arttıkça hata yapma şansın artar.
-                // Baz şans %70, ancak her 10 Risk puanında şans %5 azalır.
-                let successChance = 0.70 - (this.risk * 0.01);
-                if (successChance < 0.3) successChance = 0.3; // Min %30 şans kalır.
+                // Başarı şansı biraz daha adil
+                let successChance = 0.75 - (this.risk * 0.008);
+                if (successChance < 0.4) successChance = 0.4; // Asla %40'ın altına düşmez
 
                 const isSuccess = Math.random() < successChance;
 
                 if (isSuccess) {
                     // --- KAZANÇ ---
-                    // Puan: (Rastgele 10-20) * Risk * CPU Gücü
                     let gain = Math.floor((Math.random() * 10 + 10) * this.risk * this.stats.cpu);
                     this.score += gain;
                     
-                    // Can Yenileme (Çok az)
-                    this.hp = Math.min(this.maxHp, this.hp + 5);
+                    // Can Yenileme ARTTIRILDI (+5 -> +15)
+                    this.hp = Math.min(this.maxHp, this.hp + 15);
 
-                    // Bit Kazanma (Zorlaştırıldı: %15 Şans)
-                    if (Math.random() < (0.15 * this.stats.luck)) {
-                        let bitGain = Math.floor(Math.random() * 3 + 1); // Sadece 1-3 Bit düşer
+                    // Bit Kazanma: ŞANS ve MİKTAR ARTTIRILDI
+                    // %30 Temel Şans (Luck ile artar)
+                    if (Math.random() < (0.30 * this.stats.luck)) {
+                        // 8 ile 20 arası Bit (Eskiden 1-3 idi)
+                        let bitGain = Math.floor(Math.random() * 12 + 8); 
                         this.bits += bitGain;
-                        this.floatText(e.clientX, e.clientY - 20, `+${bitGain} BIT`, '#ffd700');
+                        this.floatText(e.clientX, e.clientY - 30, `+${bitGain} BIT`, '#ffd700');
+                        playSound('coin');
+                    } else {
+                        playSound('hit');
                     }
 
-                    playSound('hit');
                     this.floatText(e.clientX, e.clientY, `+${gain}`, '#00f3ff');
 
                 } else {
-                    // --- HASAR (KABUS MODU) ---
-                    // Hasar: 50 baz hasar * Risk * (1 - Defans)
-                    // Risk 5.0 olduğunda tek vuruşta 250 can gidebilir!
-                    let baseDmg = 50;
+                    // --- HASAR ---
+                    // Hasar formülü biraz yumuşatıldı
+                    let baseDmg = 40; // 50'den 40'a düştü
                     let dmg = Math.floor((baseDmg * this.risk) * (1 - this.stats.def));
                     
                     this.hp -= dmg;
                     playSound('fail');
                     
-                    // Ekran sarsıntısı
-                    document.body.className = 'shake-heavy';
+                    document.body.className = 'shake';
                     setTimeout(() => document.body.className = '', 300);
 
                     this.floatText(e.clientX, e.clientY, `-${dmg} HP`, '#ff0040');
@@ -456,16 +469,14 @@
                 this.active = false;
                 clearInterval(this.timer);
                 
-                // Rekor Kontrolü
                 if (this.score > this.highScore) {
                     this.highScore = this.score;
-                    localStorage.setItem('neon_highscore', this.highScore);
+                    localStorage.setItem('neon_balanced_highscore', this.highScore);
                     this.ui.best.innerText = this.highScore;
                 }
 
                 this.ui.endScore.innerText = this.score;
                 this.ui.endScreen.classList.remove('hidden');
-                document.body.classList.add('crt-flicker'); // Bozulma efekti
             }
 
             toggleMarket() {
@@ -480,16 +491,16 @@
                     playSound('buy');
 
                     if (type === 'cpu') {
-                        this.stats.cpu += 0.5;
-                        this.prices.cpu = Math.floor(this.prices.cpu * 1.5);
+                        this.stats.cpu += 0.4;
+                        this.prices.cpu = Math.floor(this.prices.cpu * 1.3);
                     } else if (type === 'def') {
-                        if(this.stats.def < 0.6) {
+                        if(this.stats.def < 0.75) { // Max %75 defans
                             this.stats.def += 0.1;
-                            this.prices.def = Math.floor(this.prices.def * 1.8);
+                            this.prices.def = Math.floor(this.prices.def * 1.4);
                         }
                     } else if (type === 'luck') {
                         this.stats.luck += 0.2;
-                        this.prices.luck = Math.floor(this.prices.luck * 1.5);
+                        this.prices.luck = Math.floor(this.prices.luck * 1.3);
                     }
                     this.updateUI();
                     this.updateMarketUI();
@@ -501,18 +512,21 @@
                 this.ui.risk.innerText = `RISK: x${this.risk.toFixed(2)}`;
                 this.ui.bits.innerText = `${this.bits} BIT`;
                 
-                // HP Bar Rengi ve Genişliği
                 let hpPercent = (this.hp / this.maxHp) * 100;
                 this.ui.hpBar.style.width = `${hpPercent}%`;
                 this.ui.hpText.innerText = `${Math.floor(hpPercent)}%`;
 
-                if (hpPercent < 30) {
-                    this.ui.hpBar.style.backgroundColor = 'var(--danger)';
-                    this.ui.hpBar.style.boxShadow = '0 0 15px var(--danger)';
+                // Görsel Uyarılar
+                if (this.risk > 3.0) {
+                    this.ui.riskBox.style.borderColor = 'var(--danger)';
+                    this.ui.risk.style.color = 'var(--danger)';
                 } else {
-                    this.ui.hpBar.style.backgroundColor = 'var(--primary)';
-                    this.ui.hpBar.style.boxShadow = '0 0 10px var(--primary)';
+                    this.ui.riskBox.style.borderColor = 'var(--primary)';
+                    this.ui.risk.style.color = 'white';
                 }
+
+                if (hpPercent < 30) this.ui.hpBar.style.backgroundColor = 'var(--danger)';
+                else this.ui.hpBar.style.backgroundColor = 'var(--primary)';
             }
 
             updateMarketUI() {
@@ -520,7 +534,7 @@
                 this.ui.btnCpu.disabled = this.bits < this.prices.cpu;
                 this.ui.lblCpu.innerText = this.stats.cpu.toFixed(1);
 
-                if (this.stats.def >= 0.6) {
+                if (this.stats.def >= 0.75) {
                     this.ui.btnDef.innerText = "MAX";
                     this.ui.btnDef.disabled = true;
                 } else {
@@ -542,7 +556,7 @@
                 el.style.top = y + 'px';
                 el.style.color = color;
                 document.body.appendChild(el);
-                setTimeout(() => el.remove(), 900);
+                setTimeout(() => el.remove(), 800);
             }
         }
 
