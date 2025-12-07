@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON CLICKER: OVERDRIVE</title>
+    <title>NEON CLICKER: VOLATILITY</title>
     <style>
         /* --- CSS BAŞLANGICI --- */
         :root {
             --primary: #00f3ff;
             --secondary: #ff0055;
+            --success: #00ff6a; /* Yeşil renk eklendi */
             --bg: #050505;
             --grid: rgba(0, 243, 255, 0.1);
         }
 
         @font-face {
             font-family: 'Cyber';
-            src: local('Courier New'); /* Fallback */
+            src: local('Courier New');
             font-display: swap;
         }
 
@@ -204,7 +205,7 @@
             font-weight: bold;
             font-size: 1.5rem;
             pointer-events: none;
-            animation: floatUp 1s ease-out forwards;
+            animation: floatUp 0.8s ease-out forwards;
             text-shadow: 0 0 5px black;
         }
 
@@ -227,45 +228,44 @@
                 <div class="hud-bar"><div class="hud-fill" id="integrity-bar" style="width: 100%;"></div></div>
             </div>
             <div style="text-align: right;">
-                <div id="combo-display">COMBO: x1.0</div>
-                <div style="font-size: 0.8rem; color: #888;">CPS: <span id="cps-display">0</span></div>
+                <div id="combo-display">RISK: x1.0</div>
+                <div style="font-size: 0.8rem; color: #888;">VOLATILITY: HIGH</div>
             </div>
         </div>
     </div>
 
     <div id="counter-container">
         <div id="score">1000</div>
-        <div id="target-text">TARGET: 2000</div>
+        <div id="target-text">TARGET: 2500</div>
     </div>
 
     <div id="start-screen" class="overlay-screen">
         <h1 style="font-size: 3rem; color: var(--primary); text-shadow: 0 0 20px var(--primary);">NEON CLICKER</h1>
-        <p style="margin-top: 10px; opacity: 0.7;">WARNING: HIGH SPEED REQUIRED</p>
+        <p style="margin-top: 10px; opacity: 0.7;">STATUS: UNSTABLE</p>
         <button class="btn-start" onclick="game.start()">INITIALIZE</button>
     </div>
 
     <div id="end-screen" class="overlay-screen hidden">
-        <h1 id="end-title" style="font-size: 4rem; color: var(--secondary);">SYSTEM FAILURE</h1>
-        <p id="end-reason" style="font-size: 1.2rem; margin-top: 10px;">DATA CORRUPTED due to slow input.</p>
+        <h1 id="end-title" style="font-size: 4rem; color: var(--secondary);">SYSTEM CRASH</h1>
+        <p id="end-reason" style="font-size: 1.2rem; margin-top: 10px;">Market collapsed.</p>
         <button class="btn-start" onclick="game.restart()">REBOOT SYSTEM</button>
     </div>
 
     <script>
-        /* --- SES MOTORU (Web Audio API) --- */
+        /* --- SES MOTORU --- */
         class SoundEngine {
             constructor() {
                 this.ctx = new (window.AudioContext || window.webkitAudioContext)();
             }
 
-            playClick() {
+            playTone(freq, type) {
                 if (this.ctx.state === 'suspended') this.ctx.resume();
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 
-                // Click sesi için kısa ve yüksek frekanslı bir 'bip'
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.1);
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq / 2, this.ctx.currentTime + 0.1);
                 
                 gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
@@ -276,24 +276,11 @@
                 osc.stop(this.ctx.currentTime + 0.1);
             }
 
-            playFail() {
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(100, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(20, this.ctx.currentTime + 1);
-                
-                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1);
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 1);
-            }
+            playGain() { this.playTone(1200, 'sine'); } // İnce ses
+            playLoss() { this.playTone(300, 'square'); } // Kalın, bozuk ses
         }
 
-        /* --- PARÇACIK EFEKT SİSTEMİ (Canvas) --- */
+        /* --- PARÇACIK SİSTEMİ --- */
         class ParticleSystem {
             constructor() {
                 this.canvas = document.getElementById('fx-canvas');
@@ -314,31 +301,28 @@
                     this.particles.push({
                         x: x,
                         y: y,
-                        vx: (Math.random() - 0.5) * 10,
-                        vy: (Math.random() - 0.5) * 10,
+                        vx: (Math.random() - 0.5) * 15, // Daha hızlı patlama
+                        vy: (Math.random() - 0.5) * 15,
                         life: 1.0,
                         color: color,
-                        size: Math.random() * 3 + 1
+                        size: Math.random() * 4 + 1
                     });
                 }
             }
 
             animate() {
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                
                 for (let i = 0; i < this.particles.length; i++) {
                     let p = this.particles[i];
                     p.x += p.vx;
                     p.y += p.vy;
-                    p.life -= 0.02;
-                    p.vy += 0.2; // Gravity
-
+                    p.life -= 0.03;
+                    p.vy += 0.5; 
                     this.ctx.globalAlpha = p.life;
                     this.ctx.fillStyle = p.color;
                     this.ctx.beginPath();
                     this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                     this.ctx.fill();
-
                     if (p.life <= 0) {
                         this.particles.splice(i, 1);
                         i--;
@@ -349,11 +333,10 @@
             }
         }
 
-        /* --- OYUN MOTORU (Troll Logic) --- */
+        /* --- OYUN MOTORU --- */
         class GameEngine {
             constructor() {
                 this.score = 1000;
-                this.target = 2000;
                 this.combo = 1.0;
                 this.isPlaying = false;
                 this.audio = new SoundEngine();
@@ -369,7 +352,6 @@
                     body: document.body
                 };
 
-                // Click Listener (Tüm Ekran)
                 document.addEventListener('mousedown', (e) => this.handleClick(e));
                 document.addEventListener('touchstart', (e) => this.handleClick(e.touches[0]), {passive: false});
             }
@@ -381,7 +363,7 @@
                 this.ui.startScreen.classList.add('hidden');
                 this.ui.endScreen.classList.add('hidden');
                 this.updateUI();
-                this.audio.playClick(); // Başlangıç sesi
+                this.audio.playGain();
             }
 
             restart() {
@@ -393,53 +375,63 @@
             handleClick(e) {
                 if (!this.isPlaying) return;
 
-                // Efektler
-                this.particles.spawn(e.clientX, e.clientY, 15, this.combo > 3 ? '#ff0055' : '#00f3ff');
-                this.audio.playClick();
+                this.combo += 0.05; // Combo yavaş artar
                 this.shakeScreen();
-                this.showFloatingText(e.clientX, e.clientY);
 
-                // --- TROLL MANTIĞI ---
-                // Oyuncu combo yaptığını sanır, combo arttıkça düşüş miktarı artar.
-                this.combo += 0.1;
+                // --- YENİ ALGORİTMA: RİSKLİ YÜKSELİŞ ---
+                // %65 Şansla Kazan, %35 Şansla Kaybet
+                // Combo arttıkça, Kayıp miktarı Kazanç miktarından çok daha fazla büyür.
                 
-                // Düşüş Formülü: Temel düşüş (5-15) * Combo Çarpanı
-                // Oyuncu hızlı tıkladıkça combo artar, combo arttıkça daha hızlı puan kaybeder.
-                let dropAmount = Math.floor((Math.random() * 10 + 5) * this.combo);
-                
-                // Bazen ekstra "kritik hata" düşüşü yap
-                if (Math.random() > 0.9) {
-                    dropAmount *= 2; 
+                const isLucky = Math.random() > 0.35; 
+
+                if (isLucky) {
+                    // KAZANÇ (Yeşil)
+                    // 5 ile 15 arası puan * (Combo'nun yarısı kadar çarpan)
+                    let gain = Math.floor((Math.random() * 10 + 5) * (1 + this.combo * 0.2));
+                    this.score += gain;
+                    
+                    this.audio.playGain();
+                    this.particles.spawn(e.clientX, e.clientY, 8, '#00ff6a'); // Yeşil Partikül
+                    this.showFloatingText(e.clientX, e.clientY, `+${gain}`, '#00ff6a');
+                } else {
+                    // KAYIP (Kırmızı - Troll Kısmı)
+                    // 10 ile 30 arası puan * (Combo'nun TAMAMI kadar çarpan)
+                    // Combo yükseldikçe düşüşler çok can yakar.
+                    let loss = Math.floor((Math.random() * 20 + 10) * this.combo);
+                    
+                    // Nadiren (%10 şans) KRİTİK HATA (Çok büyük düşüş)
+                    if (Math.random() > 0.9) {
+                        loss *= 2.5; 
+                        this.showFloatingText(e.clientX, e.clientY, "CRITICAL ERROR", '#ff0055');
+                        this.ui.body.classList.add('glitch-active');
+                        setTimeout(() => this.ui.body.classList.remove('glitch-active'), 300);
+                    }
+
+                    this.score -= Math.floor(loss);
+                    
+                    this.audio.playLoss();
+                    this.particles.spawn(e.clientX, e.clientY, 15, '#ff0055'); // Kırmızı Partikül
+                    this.showFloatingText(e.clientX, e.clientY, `-${Math.floor(loss)}`, '#ff0055');
                 }
 
-                this.score -= dropAmount;
-
-                // UI Güncelleme
                 this.updateUI();
                 this.checkGameState();
             }
 
-            showFloatingText(x, y) {
+            showFloatingText(x, y, text, color) {
                 const el = document.createElement('div');
                 el.className = 'floating-text';
-                
-                // Oyuncuya gösterilen YALAN metinler
-                const phrases = ["+1", "+1", "PERFECT", "CRITICAL", "FASTER!", "BOOST"];
-                const text = phrases[Math.floor(Math.random() * phrases.length)];
-                
                 el.innerText = text;
                 el.style.left = x + 'px';
                 el.style.top = y + 'px';
-                
-                // Combo yüksekse metin rengi kırmızıya dönsün (tehlike sinyali ama oyuncu güç sandın)
-                el.style.color = this.combo > 3 ? '#ff0055' : '#00f3ff';
-
+                el.style.color = color;
                 document.body.appendChild(el);
-                setTimeout(() => el.remove(), 1000);
+                setTimeout(() => el.remove(), 800);
             }
 
             shakeScreen() {
-                this.ui.counterContainer.style.transform = `scale(${1 + Math.random() * 0.1}) rotate(${Math.random() * 4 - 2}deg)`;
+                const intensity = Math.min(this.combo, 5); // Titreme şiddetini sınırla
+                this.ui.counterContainer.style.transform = `scale(${1 + Math.random() * 0.05}) rotate(${Math.random() * intensity - (intensity/2)}deg)`;
                 setTimeout(() => {
                     this.ui.counterContainer.style.transform = 'scale(1) rotate(0deg)';
                 }, 50);
@@ -447,23 +439,21 @@
 
             updateUI() {
                 this.ui.score.innerText = this.score;
-                this.ui.combo.innerText = `COMBO: x${this.combo.toFixed(1)}`;
+                this.ui.combo.innerText = `RISK: x${this.combo.toFixed(2)}`;
                 
-                // Bar, score 1000 üzerinden yüzde olarak azalır
-                let percent = Math.max(0, (this.score / 1000) * 100);
+                // Bar artık 2500 puana göre doluyor
+                let percent = Math.max(0, (this.score / 2500) * 100);
                 this.ui.bar.style.width = `${percent}%`;
                 
-                // Bar rengi kırmızıya dönsün
-                if (percent < 30) this.ui.bar.style.backgroundColor = '#ff0055';
-                else this.ui.bar.style.backgroundColor = '#00f3ff';
+                if (this.score > 1500) this.ui.bar.style.backgroundColor = '#00ff6a'; // Kazanmaya yakınsa yeşil
+                else if (this.score < 500) this.ui.bar.style.backgroundColor = '#ff0055'; // Kaybetmeye yakınsa kırmızı
+                else this.ui.bar.style.backgroundColor = '#00f3ff'; // Normal mavi
             }
 
             checkGameState() {
-                if (this.score >= 2000) {
-                    // Teorik olarak imkansız kazanma
+                if (this.score >= 2500) {
                     this.endGame(true);
                 } else if (this.score <= 0) {
-                    // Kaybetme
                     this.score = 0;
                     this.updateUI();
                     this.endGame(false);
@@ -476,30 +466,24 @@
                 
                 if (win) {
                     document.getElementById('end-title').innerText = "SYSTEM HACKED";
-                    document.getElementById('end-reason').innerText = "You are the chosen one.";
+                    document.getElementById('end-reason').innerText = "Impossible achieved.";
                     this.ui.body.style.backgroundColor = "#00ff00";
                 } else {
-                    this.audio.playFail();
-                    document.getElementById('end-title').innerText = "SYSTEM FAILURE";
-                    // Troll bir mesaj seç
+                    document.getElementById('end-title').innerText = "SYSTEM CRASH";
                     const reasons = [
-                        "Daha hızlı tıklamalıydın!",
-                        "İşlemcin (parmağın) çok yavaş.",
-                        "Mouse'un pili mi bitti?",
-                        "Ping: 9999ms tespit edildi.",
-                        "Yetersiz Bant Genişliği."
+                        "Volatilite çok yüksekti.",
+                        "Borsa çöktü, puanların eridi.",
+                        "Risk yönetimin zayıf.",
+                        "Daha istikrarlı tıklamalıydın.",
+                        "CPU Overheating..."
                     ];
                     document.getElementById('end-reason').innerText = reasons[Math.floor(Math.random() * reasons.length)];
                     this.ui.body.style.backgroundColor = "#220000";
-                    this.ui.body.classList.add('glitch-active');
-                    setTimeout(() => this.ui.body.classList.remove('glitch-active'), 500);
                 }
             }
         }
 
-        // Oyunu Başlat
         const game = new GameEngine();
-
     </script>
 </body>
 </html>
