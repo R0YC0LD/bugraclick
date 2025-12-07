@@ -3,532 +3,596 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CYBER BREACH: PROTOCOL</title>
+    <title>CYBER BREACH: OVERLORD</title>
     <style>
         /* --- CORE VISUALS --- */
         :root {
-            --bg-color: #05070a;
-            --panel-bg: rgba(16, 20, 25, 0.9);
+            --bg-dark: #020202;
+            --panel-bg: rgba(10, 15, 20, 0.95);
             --neon-blue: #00f3ff;
-            --neon-red: #ff2a2a;
+            --neon-red: #ff0040;
             --neon-green: #00ff66;
-            --neon-yellow: #ffcc00;
-            --border-color: #334455;
-            --font-main: 'Courier New', monospace;
+            --neon-gold: #ffd700;
+            --neon-purple: #bd00ff;
+            --border: #1a2a3a;
+            --font: 'Courier New', monospace;
         }
 
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
 
         body {
-            margin: 0;
-            background-color: var(--bg-color);
-            color: white;
-            font-family: var(--font-main);
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            margin: 0; background-color: var(--bg-dark); color: white;
+            font-family: var(--font); height: 100vh; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
         }
 
-        /* Arkaplan Grid Animasyonu */
-        .bg-grid {
-            position: absolute; width: 200vw; height: 200vh;
-            background-image: linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
-            animation: gridMove 20s linear infinite;
-            z-index: -1;
+        /* Scanlines Effect */
+        .scanlines {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px; pointer-events: none; z-index: 99; opacity: 0.5;
         }
-        @keyframes gridMove { 0% { transform: perspective(500px) rotateX(60deg) translateY(0); } 100% { transform: perspective(500px) rotateX(60deg) translateY(40px); } }
+
+        /* Arkaplan */
+        .matrix-bg {
+            position: absolute; width: 100%; height: 100%; z-index: -1;
+            background-image: radial-gradient(circle at 50% 50%, #111 0%, #000 100%);
+        }
 
         /* --- LAYOUT --- */
-        #game-container {
+        #game-grid {
             display: grid;
-            grid-template-columns: 250px 1fr 250px;
-            gap: 20px;
-            width: 95vw;
-            height: 90vh;
-            max-width: 1400px;
+            grid-template-columns: 280px 1fr 320px;
+            gap: 15px;
+            width: 98vw; height: 95vh;
+            max-width: 1600px;
         }
 
         .panel {
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
-            position: relative;
+            background: var(--panel-bg); border: 1px solid var(--border);
+            padding: 15px; display: flex; flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8); position: relative;
         }
 
-        h2 { font-size: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin: 0 0 15px 0; color: var(--neon-blue); letter-spacing: 2px; }
+        h2 { 
+            font-size: 1rem; border-bottom: 2px solid var(--border); 
+            padding-bottom: 5px; margin: 0 0 15px 0; color: var(--neon-blue); 
+            display: flex; justify-content: space-between;
+        }
+
+        /* --- LEFT: TARGET & LOGS --- */
+        .target-card {
+            background: rgba(0, 243, 255, 0.05); border: 1px solid var(--neon-blue);
+            padding: 10px; margin-bottom: 10px; text-align: center; cursor: pointer;
+            transition: 0.2s; position: relative; overflow: hidden;
+        }
+        .target-card:hover { background: rgba(0, 243, 255, 0.15); }
+        .target-card.locked { opacity: 0.5; cursor: not-allowed; border-color: #555; }
+        .target-card.active { box-shadow: 0 0 15px var(--neon-blue); border-width: 2px; }
         
-        /* --- LEFT PANEL (STATS) --- */
-        .stat-row { margin-bottom: 15px; }
-        .stat-label { font-size: 0.8rem; color: #8899aa; }
-        .stat-val { font-size: 1.4rem; font-weight: bold; color: white; }
-        .currency { color: var(--neon-yellow); }
+        .t-name { font-weight: bold; font-size: 1.1rem; }
+        .t-diff { font-size: 0.7rem; color: #aaa; margin-top: 5px; }
+        .t-security { color: var(--neon-red); font-size: 0.8rem; }
 
-        /* --- CENTER PANEL (TERMINAL) --- */
-        #main-terminal {
-            align-items: center;
-            justify-content: center;
-            border: 2px solid var(--neon-blue);
-            position: relative;
-            overflow: hidden;
+        #console-log {
+            flex-grow: 1; background: black; border: 1px solid #333;
+            padding: 10px; overflow-y: auto; font-size: 0.75rem; color: #0f0;
+            font-family: 'Consolas', monospace; margin-top: 10px;
+        }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #111; }
+        .log-warn { color: var(--neon-red); }
+        .log-gain { color: var(--neon-gold); }
+
+        /* --- CENTER: HACKING --- */
+        #main-interface { align-items: center; justify-content: center; position: relative; }
+        
+        #hack-btn {
+            width: 220px; height: 220px; border-radius: 50%;
+            border: 5px solid var(--neon-blue);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            cursor: crosshair; transition: 0.1s;
+            background: rgba(0,0,0,0.5);
+            box-shadow: 0 0 30px var(--neon-blue); z-index: 10;
+        }
+        #hack-btn:active { transform: scale(0.95); background: rgba(0, 243, 255, 0.1); }
+        #hack-btn.lockout { border-color: var(--neon-red); animation: shake 0.4s infinite; }
+
+        .stat-display {
+            position: absolute; width: 100%; top: 20px; 
+            display: flex; justify-content: space-around; font-size: 1.2rem;
         }
 
-        #target-circle {
-            width: 250px; height: 250px;
-            border-radius: 50%;
-            border: 4px dashed var(--neon-blue);
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            cursor: pointer;
-            transition: 0.1s;
-            background: rgba(0, 243, 255, 0.05);
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.1);
-            position: relative;
-            z-index: 5;
+        .bars-container { width: 80%; margin-top: 40px; }
+        
+        .progress-bar {
+            height: 24px; background: #111; border: 1px solid #444; margin-bottom: 15px;
+            position: relative; overflow: hidden;
         }
-        #target-circle:active { transform: scale(0.95); background: rgba(0, 243, 255, 0.15); }
-        #target-circle.locked { border-color: var(--neon-red); cursor: not-allowed; opacity: 0.5; animation: shake 0.5s infinite; }
+        .fill { height: 100%; transition: width 0.1s linear; }
+        .bar-txt {
+            position: absolute; width: 100%; text-align: center; top: 2px;
+            font-size: 0.8rem; font-weight: bold; text-shadow: 0 0 2px black; z-index: 2;
+        }
 
-        .progress-container { width: 100%; margin-top: 10px; background: #111; height: 20px; border: 1px solid #333; position: relative; }
-        .bar-fill { height: 100%; width: 0%; transition: width 0.2s; }
-        .bar-label { position: absolute; top: 0; left: 0; width: 100%; text-align: center; font-size: 0.75rem; line-height: 18px; text-shadow: 0 0 2px black; font-weight: bold; }
-
-        /* Barların Renkleri */
-        #trace-bar .bar-fill { background: var(--neon-red); box-shadow: 0 0 10px var(--neon-red); }
-        #hack-bar .bar-fill { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
-
-        /* --- RIGHT PANEL (SHOP) --- */
-        .shop-item {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid #333;
-            padding: 10px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: 0.2s;
+        /* --- RIGHT: SHOP --- */
+        .shop-category { font-size: 0.8rem; color: #888; margin: 10px 0 5px 0; border-bottom: 1px solid #333; }
+        
+        .upgrade-item {
             display: flex; justify-content: space-between; align-items: center;
+            padding: 8px; background: rgba(255,255,255,0.03); border: 1px solid #333;
+            margin-bottom: 8px; cursor: pointer; transition: 0.2s;
         }
-        .shop-item:hover { border-color: var(--neon-yellow); background: rgba(255,204,0,0.05); }
-        .shop-item.disabled { opacity: 0.5; cursor: not-allowed; border-color: #333; }
-        
-        .item-info div:first-child { font-weight: bold; font-size: 0.9rem; color: white; }
-        .item-info div:last-child { font-size: 0.7rem; color: #aaa; }
-        .item-cost { color: var(--neon-yellow); font-weight: bold; }
+        .upgrade-item:hover { border-color: var(--neon-gold); background: rgba(255,215,0,0.05); }
+        .upgrade-item.disabled { opacity: 0.4; pointer-events: none; }
 
-        /* --- EFFECTS --- */
-        .floating-text {
-            position: absolute; pointer-events: none; font-weight: bold; font-size: 1.2rem;
-            animation: floatUp 1s forwards; text-shadow: 0 0 5px black;
-        }
-        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity:1; } 100% { transform: translateY(-50px) scale(1.2); opacity:0; } }
-        
-        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+        .up-icon { font-size: 1.5rem; margin-right: 10px; width: 30px; text-align: center; }
+        .up-details { flex-grow: 1; }
+        .up-name { font-weight: bold; font-size: 0.9rem; color: white; }
+        .up-desc { font-size: 0.7rem; color: #aaa; }
+        .up-cost { color: var(--neon-gold); font-weight: bold; font-size: 0.9rem; }
 
-        /* Mobil Uyum */
-        @media (max-width: 800px) {
-            #game-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; height: 100vh; width: 100vw; gap: 5px; }
-            .panel { padding: 10px; }
-            #target-circle { width: 180px; height: 180px; }
+        /* --- ANIMATIONS --- */
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, -1px); } }
+        .floating-text { position: absolute; font-weight: bold; pointer-events: none; animation: floatUp 1s forwards; z-index: 50; }
+        @keyframes floatUp { 0% { opacity:1; transform: translateY(0); } 100% { opacity:0; transform: translateY(-60px); } }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            #game-grid { grid-template-columns: 1fr; grid-template-rows: auto auto auto; height: auto; overflow-y: scroll; }
+            #console-log { height: 100px; }
+            body { height: auto; overflow: auto; display: block; }
         }
     </style>
 </head>
 <body>
 
-    <div class="bg-grid"></div>
+    <div class="scanlines"></div>
+    <div class="matrix-bg"></div>
 
-    <div id="game-container">
+    <div id="game-grid">
         
-        <div class="panel" id="stats-panel">
-            <h2>DURUM</h2>
-            <div class="stat-row">
-                <div class="stat-label">HEDEF SİSTEM</div>
-                <div class="stat-val" id="target-name" style="color: var(--neon-blue);">Localhost</div>
-            </div>
-            <div class="stat-row">
-                <div class="stat-label">TOPLANAN VERİ</div>
-                <div class="stat-val" id="data-display">0 TB</div>
-            </div>
-            <div class="stat-row">
-                <div class="stat-label">HESAP BAKİYESİ</div>
-                <div class="stat-val currency" id="credit-display">0 CR</div>
-            </div>
-            <div style="margin-top: auto; font-size: 0.7rem; color: #555;">
-                SYSTEM VERSION 2.4<br>CONNECTED
+        <div class="panel">
+            <h2>
+                <span>HEDEF SİSTEMLER</span>
+                <span style="font-size:0.7rem;">SEVİYE: <span id="player-lvl">1</span></span>
+            </h2>
+            <div id="target-list" style="overflow-y: auto; flex-grow: 1; max-height: 50vh;">
+                </div>
+
+            <h2 style="margin-top: 15px;">SİSTEM GÜNLÜĞÜ</h2>
+            <div id="console-log">
+                <div class="log-entry">> Sistem başlatıldı...</div>
+                <div class="log-entry">> Proxy sunucularına bağlanılıyor...</div>
             </div>
         </div>
 
-        <div class="panel" id="main-terminal">
-            <div id="lockout-msg" style="position: absolute; top: 10px; color: var(--neon-red); font-weight: bold; display: none;">SİSTEM KİLİTLENDİ: <span id="lock-timer">0.0</span>s</div>
-            
-            <div id="target-circle" onclick="game.hack()">
-                <div style="font-size: 3rem;" id="click-icon">⌨</div>
-                <div style="margin-top: 10px; font-size: 0.8rem; color: #aaa;">TIKLA VE SIZ</div>
+        <div class="panel" id="main-interface">
+            <div class="stat-display">
+                <div style="text-align: center;">
+                    <div style="color: var(--neon-blue); font-size: 0.8rem;">VERİ MERKEZİ</div>
+                    <div id="data-val">0 TB</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="color: var(--neon-gold); font-size: 0.8rem;">KRİPTO CÜZDAN</div>
+                    <div id="money-val">0 ₿</div>
+                </div>
             </div>
 
-            <div style="width: 80%; margin-top: 30px;">
-                <div style="color: var(--neon-green); font-size: 0.8rem; margin-bottom: 5px; display: flex; justify-content: space-between;">
-                    <span>ŞİFRE ÇÖZME</span>
-                    <span id="hack-percent">0%</span>
-                </div>
-                <div class="progress-container" id="hack-bar">
-                    <div class="bar-fill" style="width: 0%;"></div>
-                    <div class="bar-label">CREDIT GENERATION</div>
+            <div style="position: absolute; top: 80px; width: 100%; text-align: center; color: #aaa; font-size: 0.9rem;">
+                HEDEF: <span id="current-target-name" style="color:white; font-weight:bold;">Seçiliyor...</span>
+            </div>
+
+            <div id="hack-btn" onclick="game.manualHack()">
+                <div style="font-size: 3rem;">☠</div>
+                <div style="font-size: 0.8rem; margin-top:5px; color: var(--neon-blue);">BAĞLANTIYI ZORLA</div>
+            </div>
+
+            <div class="bars-container">
+                <div class="progress-bar" style="border-color: var(--neon-green);">
+                    <div class="bar-txt">SIZMA İLERLEMESİ (%<span id="breach-pct">0</span>)</div>
+                    <div class="fill" id="breach-fill" style="width: 0%; background: var(--neon-green); box-shadow: 0 0 15px var(--neon-green);"></div>
                 </div>
 
-                <div style="color: var(--neon-red); font-size: 0.8rem; margin-top: 15px; margin-bottom: 5px; display: flex; justify-content: space-between;">
-                    <span>İZLENME SEVİYESİ</span>
-                    <span id="trace-percent">0%</span>
+                <div class="progress-bar" style="border-color: var(--neon-red);">
+                    <div class="bar-txt">TESPİT EDİLME RİSKİ (%<span id="risk-pct">0</span>)</div>
+                    <div class="fill" id="risk-fill" style="width: 0%; background: var(--neon-red); box-shadow: 0 0 15px var(--neon-red);"></div>
                 </div>
-                <div class="progress-container" id="trace-bar">
-                    <div class="bar-fill" style="width: 0%;"></div>
-                    <div class="bar-label">DETECTION RISK</div>
+                
+                <div style="text-align: center; font-size: 0.7rem; color: #666;">
+                    *RİSK %100 OLURSA BAĞLANTI KESİLİR*
                 </div>
             </div>
         </div>
 
-        <div class="panel" id="shop-panel">
-            <h2>DARK WEB</h2>
-            
-            <div class="shop-item" id="btn-cpu" onclick="game.buy('cpu')">
-                <div class="item-info">
-                    <div>CPU YÜKSELT</div>
-                    <div>Veri Kazancı: +<span id="val-cpu">1</span></div>
+        <div class="panel">
+            <h2>
+                <span>KARABORSA</span>
+                <span id="gps-display" style="font-size: 0.7rem; color: var(--neon-gold);">0 ₿/sn</span>
+            </h2>
+            <div style="overflow-y: auto; height: 100%;">
+                
+                <div class="shop-category">DONANIM (GÜÇ)</div>
+                <div class="upgrade-item" id="btn-cpu" onclick="game.buy('cpu')">
+                    <div class="up-icon">💻</div>
+                    <div class="up-details">
+                        <div class="up-name">CPU Overclock</div>
+                        <div class="up-desc">Tıklama gücünü arttırır.</div>
+                    </div>
+                    <div class="up-cost" id="cost-cpu">50</div>
                 </div>
-                <div class="item-cost" id="cost-cpu">50 CR</div>
-            </div>
+                
+                <div class="shop-category">OTOMASYON (HACK)</div>
+                <div class="upgrade-item" id="btn-bot" onclick="game.buy('bot')">
+                    <div class="up-icon">🤖</div>
+                    <div class="up-details">
+                        <div class="up-name">Zombi Botnet</div>
+                        <div class="up-desc">Hedefi oto. hackler (Az risk).</div>
+                    </div>
+                    <div class="up-cost" id="cost-bot">200</div>
+                </div>
 
-            <div class="shop-item" id="btn-cool" onclick="game.buy('cool')">
-                <div class="item-info">
-                    <div>SOĞUTMA SİSTEMİ</div>
-                    <div>Risk Düşüş Hızı</div>
+                <div class="shop-category">PASİF GELİR (MINING)</div>
+                <div class="upgrade-item" id="btn-mine" onclick="game.buy('mine')">
+                    <div class="up-icon">⛏️</div>
+                    <div class="up-details">
+                        <div class="up-name">GPU Rig</div>
+                        <div class="up-desc">Otomatik Kripto üretir.</div>
+                    </div>
+                    <div class="up-cost" id="cost-mine">500</div>
                 </div>
-                <div class="item-cost" id="cost-cool">100 CR</div>
-            </div>
+                <div class="upgrade-item" id="btn-farm" onclick="game.buy('farm')">
+                    <div class="up-icon">🏢</div>
+                    <div class="up-details">
+                        <div class="up-name">Server Çiftliği</div>
+                        <div class="up-desc">Devasa pasif gelir.</div>
+                    </div>
+                    <div class="up-cost" id="cost-farm">2500</div>
+                </div>
 
-            <div class="shop-item" id="btn-bot" onclick="game.buy('bot')">
-                <div class="item-info">
-                    <div>BOTNET AĞI</div>
-                    <div>Oto. Hack: <span id="val-bot">0</span>/sn</div>
+                <div class="shop-category">GÜVENLİK (DEFANS)</div>
+                <div class="upgrade-item" id="btn-proxy" onclick="game.buy('proxy')">
+                    <div class="up-icon">🛡️</div>
+                    <div class="up-details">
+                        <div class="up-name">VPN Tüneli</div>
+                        <div class="up-desc">Risk artışını yavaşlatır.</div>
+                    </div>
+                    <div class="up-cost" id="cost-proxy">300</div>
                 </div>
-                <div class="item-cost" id="cost-bot">200 CR</div>
-            </div>
+                 <div class="upgrade-item" id="btn-cool" onclick="game.buy('cool')">
+                    <div class="up-icon">❄️</div>
+                    <div class="up-details">
+                        <div class="up-name">Nitro Soğutma</div>
+                        <div class="up-desc">Riskin düşüşünü hızlandırır.</div>
+                    </div>
+                    <div class="up-cost" id="cost-cool">150</div>
+                </div>
 
-            <div class="shop-item" id="btn-algo" onclick="game.buy('algo')">
-                <div class="item-info">
-                    <div>ALGORİTMA V2</div>
-                    <div>Kredi Çarpanı</div>
-                </div>
-                <div class="item-cost" id="cost-algo">500 CR</div>
             </div>
         </div>
 
     </div>
 
     <script>
-        /* --- SES MOTORU (Synthesizer) --- */
+        /* --- SES MOTORU --- */
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        function playTone(type) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+        function sfx(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             const now = audioCtx.currentTime;
-
-            if (type === 'hit') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(400 + Math.random()*200, now);
+            
+            if (type === 'click') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
                 osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.1);
-                osc.start(now); osc.stop(now + 0.1);
-            } else if (type === 'coin') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(1200, now);
-                osc.frequency.linearRampToValueAtTime(2000, now + 0.1);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.15);
-                osc.start(now); osc.stop(now + 0.15);
-            } else if (type === 'alert') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(100, now);
-                osc.frequency.linearRampToValueAtTime(50, now + 0.5);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.5);
-                osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'money') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(1200, now);
+                osc.frequency.linearRampToValueAtTime(1800, now + 0.1);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now);
+                osc.frequency.linearRampToValueAtTime(50, now + 0.3);
+            } else if (type === 'buy') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now);
+                osc.frequency.linearRampToValueAtTime(600, now + 0.1);
             }
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.15);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + 0.15);
         }
 
-        /* --- OYUN MOTORU --- */
-        class CyberGame {
+        /* --- OYUN VERİSİ & AYARLAR --- */
+        const TARGETS = [
+            { id: 0, name: "Ev Bilgisayarı", security: 1.0, reward: 10, reqLvl: 1 },
+            { id: 1, name: "Şirket Wi-Fi", security: 1.5, reward: 25, reqLvl: 2 },
+            { id: 2, name: "Banka Sunucusu", security: 2.2, reward: 60, reqLvl: 3 },
+            { id: 3, name: "Devlet Veritabanı", security: 3.0, reward: 150, reqLvl: 4 },
+            { id: 4, name: "Askeri Uydu", security: 4.5, reward: 400, reqLvl: 5 },
+            { id: 5, name: "Yapay Zeka Çekirdeği", security: 6.0, reward: 1000, reqLvl: 6 },
+            { id: 6, name: "BLOCKCHAIN ANA AĞI", security: 8.0, reward: 5000, reqLvl: 7 }
+        ];
+
+        class Game {
             constructor() {
-                // Değişkenler
-                this.data = 0;
-                this.credits = 0;
-                this.trace = 0;
-                this.hackProgress = 0;
-                this.isLocked = false;
+                // Kayıtlı veriyi yükle veya varsayılanı kullan
+                const saved = JSON.parse(localStorage.getItem('cyberOverlordSave')) || {};
                 
-                // Yükseltmeler ve İstatistikler
+                this.money = saved.money || 0;
+                this.data = saved.data || 0;
+                this.level = saved.level || 1;
+                
+                // İstatistikler
                 this.stats = {
-                    cpuPower: 1,      // Tık başına Data
-                    cooling: 0.5,     // Saniyede düşen Risk
-                    botnet: 0,        // Saniyedeki otomatik tık
-                    algoMult: 1       // Kredi kazanım çarpanı
+                    clickPower: saved.stats?.clickPower || 1,   // Tık başına güç
+                    riskDefense: saved.stats?.riskDefense || 1.0, // Risk çarpanı (düşük iyi)
+                    riskCooling: saved.stats?.riskCooling || 2.0, // Saniyede risk düşüşü
+                    autoHack: saved.stats?.autoHack || 0,       // Botnet gücü
+                    passiveIncome: saved.stats?.passiveIncome || 0 // Mining geliri
                 };
 
-                // Fiyatlar ve Seviyeler
-                this.shop = {
-                    cpu: { cost: 50, lvl: 1 },
-                    cool: { cost: 100, lvl: 1 },
-                    botnet: { cost: 200, lvl: 0 },
-                    algo: { cost: 500, lvl: 1 }
-                };
+                // Market Seviyeleri (Fiyat hesaplama için)
+                this.upgrades = saved.upgrades || { cpu:1, bot:0, mine:0, farm:0, proxy:0, cool:0 };
 
-                // Hedef İsimleri (Kozmetik İlerleme)
-                this.targets = ["Localhost", "Neighbour WiFi", "ATM Network", "City Cam System", "Bank Server", "Military DB", "Satellite Uplink", "AI Core"];
-                this.currentTargetIdx = 0;
-                this.dataForNextLevel = 1000;
+                // Geçici Değişkenler
+                this.currentTargetId = 0;
+                this.breach = 0;
+                this.risk = 0;
+                this.isLockout = false;
+                this.lockoutTimer = 0;
 
-                // UI Referansları
-                this.ui = {
-                    data: document.getElementById('data-display'),
-                    creds: document.getElementById('credit-display'),
-                    target: document.getElementById('target-name'),
-                    traceBar: document.querySelector('#trace-bar .bar-fill'),
-                    traceTxt: document.getElementById('trace-percent'),
-                    hackBar: document.querySelector('#hack-bar .bar-fill'),
-                    hackTxt: document.getElementById('hack-percent'),
-                    circle: document.getElementById('target-circle'),
-                    lockMsg: document.getElementById('lockout-msg'),
-                    lockTimer: document.getElementById('lock-timer'),
-                    // Market
-                    btnCpu: document.getElementById('btn-cpu'),
-                    btnCool: document.getElementById('btn-cool'),
-                    btnBot: document.getElementById('btn-bot'),
-                    btnAlgo: document.getElementById('btn-algo')
-                };
-
-                // Oyun Döngüsü Başlat
-                this.lastTime = performance.now();
-                requestAnimationFrame((t) => this.loop(t));
-                setInterval(() => this.oneSecondLoop(), 1000); // Saniyelik işlemler
+                this.initUI();
+                this.startGameLoop();
             }
 
-            // --- TEMEL EYLEMLER ---
-
-            hack() {
-                if (this.isLocked) return;
-
-                // 1. Veri Kazan
-                let gain = this.stats.cpuPower;
-                this.data += gain;
+            initUI() {
+                // Hedef Listesini Oluştur
+                const list = document.getElementById('target-list');
+                list.innerHTML = '';
+                TARGETS.forEach(t => {
+                    const el = document.createElement('div');
+                    el.className = 'target-card';
+                    if (this.level < t.reqLvl) el.className += ' locked';
+                    if (this.currentTargetId === t.id) el.className += ' active';
+                    
+                    el.onclick = () => this.selectTarget(t.id);
+                    el.innerHTML = `
+                        <div class="t-name">${t.name}</div>
+                        <div class="t-diff">Gereken Seviye: ${t.reqLvl}</div>
+                        <div class="t-security">Güvenlik: x${t.security}</div>
+                    `;
+                    list.appendChild(el);
+                });
                 
-                // 2. Risk Arttır (Hızlı tıklama riski arttırır)
-                // Risk her tıkta 4 artar. Soğutma saniyede düşürür.
-                this.trace += 4; 
-                if (this.trace > 100) this.trace = 100;
+                this.log("Sistem yüklendi. Hoşgeldiniz, Operatör.");
+                this.updateCosts();
+            }
 
-                // 3. Şifre Çözme İlerlemesi (Kredi için)
-                // Her tık %2 ile %5 arası ilerleme sağlar
-                let progress = Math.random() * 3 + 2;
-                this.hackProgress += progress;
+            selectTarget(id) {
+                if (this.level < TARGETS[id].reqLvl) {
+                    this.log("ERİŞİM REDDEDİLDİ: Seviye yetersiz.", "warn");
+                    return;
+                }
+                this.currentTargetId = id;
+                this.breach = 0;
+                this.risk = 0;
+                this.isLockout = false;
+                
+                // UI Güncelle
+                document.querySelectorAll('.target-card').forEach(el => el.classList.remove('active'));
+                document.getElementById('target-list').children[id].classList.add('active');
+                document.getElementById('current-target-name').innerText = TARGETS[id].name;
+                this.log(`Hedef değiştirildi: ${TARGETS[id].name}`);
+            }
 
-                if (this.hackProgress >= 100) {
-                    this.payout();
+            manualHack() {
+                if (this.isLockout) {
+                    sfx('error'); return;
                 }
 
-                // 4. Seviye Kontrolü
-                if (this.data >= this.dataForNextLevel) {
-                    this.levelUp();
-                }
+                const target = TARGETS[this.currentTargetId];
+                
+                // 1. Sızma İlerlemesi
+                // Formül: (Tık Gücü) / (Zorluk Çarpanı biraz yumuşatılmış)
+                let breachGain = (this.stats.clickPower * 2) + Math.random();
+                this.breach += breachGain;
+
+                // 2. Risk Artışı
+                // Formül: (Hedef Güvenliği * 5) / (Defans Gücü)
+                let riskGain = (target.security * 4) / this.stats.riskDefense;
+                this.risk += riskGain;
 
                 // Efektler
-                playTone('hit');
-                this.checkLockout();
-                this.updateUI();
-                this.showFloatText(event.clientX, event.clientY, `+${gain} TB`, '#00f3ff');
+                sfx('click');
+                this.createFloatText(event.clientX, event.clientY, `+${Math.floor(breachGain)}`, '#00ff66');
+                
+                this.checkStatus();
             }
 
-            payout() {
-                this.hackProgress = 0;
-                // Kredi Ödülü: (Seviye * 10) * Algoritma Çarpanı
-                let reward = Math.floor((10 + (this.currentTargetIdx * 5)) * this.stats.algoMult);
-                // Biraz rastgelelik
-                reward = Math.floor(reward * (0.8 + Math.random() * 0.4));
-                
-                this.credits += reward;
-                playTone('coin');
-                
-                // Efekt: Hedefin ortasında para yazısı
-                const rect = this.ui.circle.getBoundingClientRect();
-                this.showFloatText(rect.left + 125, rect.top + 125, `+${reward} CR`, '#ffcc00');
-            }
-
-            checkLockout() {
-                if (this.trace >= 100) {
-                    this.lockSystem();
-                }
-            }
-
-            lockSystem() {
-                this.isLocked = true;
-                this.ui.circle.classList.add('locked');
-                this.ui.lockMsg.style.display = 'block';
-                playTone('alert');
-                
-                let cooldown = 5; // 5 saniye ceza
-                
-                let interval = setInterval(() => {
-                    cooldown -= 0.1;
-                    this.ui.lockTimer.innerText = cooldown.toFixed(1);
-                    if (cooldown <= 0) {
-                        clearInterval(interval);
-                        this.isLocked = false;
-                        this.trace = 50; // Ceza bitince risk %50'den başlar
-                        this.ui.circle.classList.remove('locked');
-                        this.ui.lockMsg.style.display = 'none';
+            gameLoop() {
+                if (this.isLockout) {
+                    this.lockoutTimer -= 0.1;
+                    if (this.lockoutTimer <= 0) {
+                        this.isLockout = false;
+                        this.risk = 50; // Ceza bitince %50 riskle başla
+                        document.getElementById('hack-btn').classList.remove('lockout');
+                        this.log("Sistem kilidi açıldı. Dikkatli ol.");
                     }
-                }, 100);
-            }
+                    // Kilitliyken risk düşmez
+                } else {
+                    // Risk Soğutma
+                    if (this.risk > 0) {
+                        this.risk -= (this.stats.riskCooling * 0.1);
+                        if (this.risk < 0) this.risk = 0;
+                    }
 
-            // --- ZAMANLAYICI DÖNGÜLERİ ---
-
-            loop(time) {
-                let dt = (time - this.lastTime) / 1000;
-                this.lastTime = time;
-
-                if (!this.isLocked && this.trace > 0) {
-                    // Risk Soğutma: Saniyede "cooling" kadar düşer
-                    this.trace -= this.stats.cooling * dt * 10; 
-                    if (this.trace < 0) this.trace = 0;
+                    // Botnet (Otomatik Hack)
+                    if (this.stats.autoHack > 0) {
+                        this.breach += (this.stats.autoHack * 0.1);
+                        // Botnet çok az risk üretir (%5 oranında)
+                        this.risk += (TARGETS[this.currentTargetId].security * 0.1) / this.stats.riskDefense;
+                        this.checkStatus();
+                    }
                 }
 
-                // Otomatik Botnet Hack
-                if (this.stats.botnet > 0 && !this.isLocked) {
-                    // Botnet her frame'de ufak ufak veri ekler
-                    this.data += (this.stats.botnet * this.stats.cpuPower) * dt;
+                // Pasif Gelir (Mining) - Saniyede bir yerine her frame'de ufak ufak
+                if (this.stats.passiveIncome > 0) {
+                    this.money += (this.stats.passiveIncome * 0.1);
+                }
+
+                this.updateUI();
+                
+                // 100ms döngü için 10'a bölüyoruz değerleri
+            }
+
+            checkStatus() {
+                // Başarılı Hack
+                if (this.breach >= 100) {
+                    this.breach = 0;
+                    const t = TARGETS[this.currentTargetId];
+                    const reward = Math.floor(t.reward * (1 + Math.random()*0.5)); // %50 varyasyon
                     
-                    // Botnet yavaşça şifre de çözer (daha yavaş)
-                    this.hackProgress += (this.stats.botnet * 2) * dt;
-                    if(this.hackProgress >= 100) this.payout();
+                    this.money += reward;
+                    this.data += 1; // Veri puanı kazan
+                    
+                    sfx('money');
+                    this.log(`SIZMA BAŞARILI: ${reward} ₿ kazanıldı.`, "gain");
+                    
+                    // Seviye Atlama Kontrolü (Basitçe 20 veri = 1 seviye)
+                    if (this.data >= this.level * 50) {
+                        this.level++;
+                        this.log(`SEVİYE ATLADINIZ! YENİ SEVİYE: ${this.level}`, "gain");
+                        this.initUI(); // Hedef listesini güncelle
+                    }
                 }
 
-                this.updateUIBars();
-                requestAnimationFrame((t) => this.loop(t));
+                // Risk Doldu -> Kilitlenme
+                if (this.risk >= 100) {
+                    this.risk = 100;
+                    this.isLockout = true;
+                    this.lockoutTimer = 5; // 5 saniye ceza
+                    document.getElementById('hack-btn').classList.add('lockout');
+                    sfx('error');
+                    this.log("TESPİT EDİLDİNİZ! BAĞLANTI KESİLDİ.", "warn");
+                }
             }
-
-            oneSecondLoop() {
-                // Buton durumlarını güncelle
-                this.updateShopButtons();
-            }
-
-            // --- MARKET SİSTEMİ ---
 
             buy(type) {
-                let item = this.shop[type];
-                if (this.credits >= item.cost) {
-                    this.credits -= item.cost;
-                    item.lvl++;
-                    playTone('coin');
+                const costs = this.getCosts();
+                const cost = costs[type];
 
-                    // Özellikleri Arttır
-                    if (type === 'cpu') {
-                        this.stats.cpuPower += 1;
-                        item.cost = Math.floor(item.cost * 1.5);
-                        document.getElementById('val-cpu').innerText = this.stats.cpuPower;
-                    } 
-                    else if (type === 'cool') {
-                        this.stats.cooling += 0.2;
-                        item.cost = Math.floor(item.cost * 1.6);
-                    } 
-                    else if (type === 'botnet') {
-                        this.stats.botnet += 1;
-                        item.cost = Math.floor(item.cost * 1.8);
-                        document.getElementById('val-bot').innerText = this.stats.botnet;
-                    } 
-                    else if (type === 'algo') {
-                        this.stats.algoMult += 0.5;
-                        item.cost = Math.floor(item.cost * 2.0);
-                    }
+                if (this.money >= cost) {
+                    this.money -= cost;
+                    this.upgrades[type]++;
+                    sfx('buy');
 
-                    // Fiyatı Güncelle
-                    document.getElementById(`cost-${type}`).innerText = item.cost + ' CR';
-                    this.updateUI();
-                    this.updateShopButtons();
+                    // Özellikleri Uygula
+                    if (type === 'cpu') this.stats.clickPower += 0.5;
+                    if (type === 'bot') this.stats.autoHack += 2;
+                    if (type === 'mine') this.stats.passiveIncome += 5;
+                    if (type === 'farm') this.stats.passiveIncome += 40;
+                    if (type === 'proxy') this.stats.riskDefense += 0.2;
+                    if (type === 'cool') this.stats.riskCooling += 0.5;
+
+                    this.updateCosts();
+                    this.saveGame();
+                } else {
+                    sfx('error');
                 }
             }
 
-            levelUp() {
-                if (this.currentTargetIdx < this.targets.length - 1) {
-                    this.currentTargetIdx++;
-                    this.dataForNextLevel *= 2.5; // Bir sonraki hedef daha zor
-                    this.ui.target.innerText = this.targets[this.currentTargetIdx];
-                    this.showFloatText(window.innerWidth/2, window.innerHeight/2, "SYSTEM BREACHED - NEXT TARGET", "#00ff66");
-                }
+            getCosts() {
+                return {
+                    cpu: Math.floor(50 * Math.pow(1.5, this.upgrades.cpu)),
+                    bot: Math.floor(200 * Math.pow(1.4, this.upgrades.bot)),
+                    mine: Math.floor(500 * Math.pow(1.3, this.upgrades.mine)),
+                    farm: Math.floor(2500 * Math.pow(1.3, this.upgrades.farm)),
+                    proxy: Math.floor(300 * Math.pow(1.6, this.upgrades.proxy)),
+                    cool: Math.floor(150 * Math.pow(1.5, this.upgrades.cool)),
+                };
             }
 
-            // --- GÖRSEL ---
+            updateCosts() {
+                const c = this.getCosts();
+                document.getElementById('cost-cpu').innerText = c.cpu;
+                document.getElementById('cost-bot').innerText = c.bot;
+                document.getElementById('cost-mine').innerText = c.mine;
+                document.getElementById('cost-farm').innerText = c.farm;
+                document.getElementById('cost-proxy').innerText = c.proxy;
+                document.getElementById('cost-cool').innerText = c.cool;
+            }
 
             updateUI() {
-                this.ui.data.innerText = Math.floor(this.data) + " TB";
-                this.ui.creds.innerText = this.credits + " CR";
-            }
+                // Değerler
+                document.getElementById('money-val').innerText = Math.floor(this.money).toLocaleString() + ' ₿';
+                document.getElementById('data-val').innerText = this.data + ' TB';
+                document.getElementById('player-lvl').innerText = this.level;
+                document.getElementById('gps-display').innerText = this.stats.passiveIncome.toFixed(1) + ' ₿/sn';
 
-            updateUIBars() {
-                // Risk Barı
-                this.ui.traceBar.style.width = this.trace + "%";
-                this.ui.traceTxt.innerText = Math.floor(this.trace) + "%";
-                // Renk değişimi
-                if (this.trace > 80) this.ui.traceBar.style.backgroundColor = "#ff0000"; // Kritik
-                else this.ui.traceBar.style.backgroundColor = "#ff2a2a";
+                // Barlar
+                document.getElementById('breach-fill').style.width = Math.min(100, this.breach) + '%';
+                document.getElementById('breach-pct').innerText = Math.floor(this.breach);
 
-                // Hack Barı
-                this.ui.hackBar.style.width = Math.min(100, this.hackProgress) + "%";
-                this.ui.hackTxt.innerText = Math.floor(Math.min(100, this.hackProgress)) + "%";
-            }
-
-            updateShopButtons() {
-                // Paranın yettiği butonları parlat, yetmediğini söndür
-                const check = (type, btn) => {
-                    if (this.credits >= this.shop[type].cost) {
+                document.getElementById('risk-fill').style.width = Math.min(100, this.risk) + '%';
+                document.getElementById('risk-pct').innerText = Math.floor(this.risk);
+                
+                // Market Butonları (Aktif/Pasif)
+                const costs = this.getCosts();
+                const checkBtn = (id, cost) => {
+                    const btn = document.getElementById(id);
+                    if (this.money >= cost) {
                         btn.classList.remove('disabled');
-                        btn.style.borderColor = "#ffcc00";
+                        btn.style.borderColor = 'var(--neon-gold)';
                     } else {
                         btn.classList.add('disabled');
-                        btn.style.borderColor = "#333";
+                        btn.style.borderColor = '#333';
                     }
                 };
-
-                check('cpu', this.ui.btnCpu);
-                check('cool', this.ui.btnCool);
-                check('botnet', this.ui.btnBot);
-                check('algo', this.ui.btnAlgo);
+                checkBtn('btn-cpu', costs.cpu);
+                checkBtn('btn-bot', costs.bot);
+                checkBtn('btn-mine', costs.mine);
+                checkBtn('btn-farm', costs.farm);
+                checkBtn('btn-proxy', costs.proxy);
+                checkBtn('btn-cool', costs.cool);
             }
 
-            showFloatText(x, y, text, color) {
+            log(msg, type="") {
+                const consoleEl = document.getElementById('console-log');
+                const div = document.createElement('div');
+                div.className = 'log-entry ' + (type === 'warn' ? 'log-warn' : type === 'gain' ? 'log-gain' : '');
+                div.innerText = `> ${msg}`;
+                consoleEl.appendChild(div);
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            }
+
+            createFloatText(x, y, text, color) {
                 const el = document.createElement('div');
                 el.className = 'floating-text';
                 el.innerText = text;
-                el.style.left = x + 'px';
-                el.style.top = y + 'px';
+                el.style.left = (x - 10) + 'px';
+                el.style.top = (y - 20) + 'px';
                 el.style.color = color;
                 document.body.appendChild(el);
                 setTimeout(() => el.remove(), 1000);
             }
+
+            saveGame() {
+                const data = {
+                    money: this.money,
+                    data: this.data,
+                    level: this.level,
+                    stats: this.stats,
+                    upgrades: this.upgrades
+                };
+                localStorage.setItem('cyberOverlordSave', JSON.stringify(data));
+            }
+
+            startGameLoop() {
+                setInterval(() => this.gameLoop(), 100); // Saniyede 10 kare mantık döngüsü
+                setInterval(() => this.saveGame(), 10000); // 10 saniyede bir oto-save
+            }
         }
 
-        // Oyunu Başlat
-        const game = new CyberGame();
+        const game = new Game();
 
     </script>
 </body>
