@@ -2,22 +2,504 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Click Rush Challenge</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEON CLICKER: OVERDRIVE</title>
+    <style>
+        /* --- CSS BAŞLANGICI --- */
+        :root {
+            --primary: #00f3ff;
+            --secondary: #ff0055;
+            --bg: #050505;
+            --grid: rgba(0, 243, 255, 0.1);
+        }
+
+        @font-face {
+            font-family: 'Cyber';
+            src: local('Courier New'); /* Fallback */
+            font-display: swap;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: crosshair;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* Arkaplan Grid Efekti */
+        .grid-bg {
+            position: absolute;
+            width: 200vw;
+            height: 200vh;
+            background-image: 
+                linear-gradient(var(--grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: rotateX(60deg) translateY(-100px) translateZ(-200px);
+            animation: gridScroll 20s linear infinite;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        @keyframes gridScroll {
+            0% { transform: rotateX(60deg) translateY(0) translateZ(-200px); }
+            100% { transform: rotateX(60deg) translateY(50px) translateZ(-200px); }
+        }
+
+        /* UI Katmanı */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px var(--primary);
+            opacity: 0.8;
+        }
+
+        .hud-bar {
+            width: 200px;
+            height: 10px;
+            background: #333;
+            border: 1px solid var(--primary);
+            margin-top: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hud-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.1s;
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        /* Ana Sayaç */
+        #counter-container {
+            position: relative;
+            z-index: 5;
+            text-align: center;
+            transition: transform 0.05s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #score {
+            font-size: 8rem;
+            font-weight: 900;
+            background: linear-gradient(to bottom, #fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5));
+            letter-spacing: -5px;
+        }
+
+        #target-text {
+            color: var(--secondary);
+            font-size: 1.5rem;
+            letter-spacing: 5px;
+            margin-top: -10px;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        /* Canvas (Partiküller için) */
+        #fx-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Başlangıç ve Bitiş Ekranları */
+        .overlay-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 5, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s;
+        }
+
+        .btn-start {
+            margin-top: 30px;
+            padding: 20px 50px;
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        .btn-start:hover {
+            background: var(--primary);
+            color: black;
+            box-shadow: 0 0 30px var(--primary);
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Glitch Efekti */
+        .glitch-active {
+            animation: glitch-anim 0.2s infinite;
+        }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(0); }
+            20% { transform: translate(-5px, 5px); }
+            40% { transform: translate(-5px, -5px); }
+            60% { transform: translate(5px, 5px); }
+            80% { transform: translate(5px, -5px); }
+            100% { transform: translate(0); }
+        }
+
+        /* Renkli Bildirim Yazıları (+1, CRITICAL vs) */
+        .floating-text {
+            position: absolute;
+            font-weight: bold;
+            font-size: 1.5rem;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            text-shadow: 0 0 5px black;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-80px) scale(1.5); }
+        }
+
+    </style>
 </head>
 <body>
 
-    <div id="game-container">
-        <h1 id="counter">1000</h1>
-        <p class="hint">Hedef: 2000 puana ulaş!</p>
+    <div class="grid-bg"></div>
+    <canvas id="fx-canvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div>
+                <div>SYSTEM INTEGRITY</div>
+                <div class="hud-bar"><div class="hud-fill" id="integrity-bar" style="width: 100%;"></div></div>
+            </div>
+            <div style="text-align: right;">
+                <div id="combo-display">COMBO: x1.0</div>
+                <div style="font-size: 0.8rem; color: #888;">CPS: <span id="cps-display">0</span></div>
+            </div>
+        </div>
     </div>
 
-    <div id="end-screen" class="hidden">
-        <h2 id="end-message"></h2>
-        <button id="restart-btn" class="hidden">Tekrar Dene</button>
+    <div id="counter-container">
+        <div id="score">1000</div>
+        <div id="target-text">TARGET: 2000</div>
     </div>
 
-    <script src="script.js"></script>
+    <div id="start-screen" class="overlay-screen">
+        <h1 style="font-size: 3rem; color: var(--primary); text-shadow: 0 0 20px var(--primary);">NEON CLICKER</h1>
+        <p style="margin-top: 10px; opacity: 0.7;">WARNING: HIGH SPEED REQUIRED</p>
+        <button class="btn-start" onclick="game.start()">INITIALIZE</button>
+    </div>
+
+    <div id="end-screen" class="overlay-screen hidden">
+        <h1 id="end-title" style="font-size: 4rem; color: var(--secondary);">SYSTEM FAILURE</h1>
+        <p id="end-reason" style="font-size: 1.2rem; margin-top: 10px;">DATA CORRUPTED due to slow input.</p>
+        <button class="btn-start" onclick="game.restart()">REBOOT SYSTEM</button>
+    </div>
+
+    <script>
+        /* --- SES MOTORU (Web Audio API) --- */
+        class SoundEngine {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            playClick() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                // Click sesi için kısa ve yüksek frekanslı bir 'bip'
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.1);
+                
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            }
+
+            playFail() {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(20, this.ctx.currentTime + 1);
+                
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 1);
+            }
+        }
+
+        /* --- PARÇACIK EFEKT SİSTEMİ (Canvas) --- */
+        class ParticleSystem {
+            constructor() {
+                this.canvas = document.getElementById('fx-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.particles = [];
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                this.animate();
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+
+            spawn(x, y, count = 10, color = '#00f3ff') {
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        vx: (Math.random() - 0.5) * 10,
+                        vy: (Math.random() - 0.5) * 10,
+                        life: 1.0,
+                        color: color,
+                        size: Math.random() * 3 + 1
+                    });
+                }
+            }
+
+            animate() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                for (let i = 0; i < this.particles.length; i++) {
+                    let p = this.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.02;
+                    p.vy += 0.2; // Gravity
+
+                    this.ctx.globalAlpha = p.life;
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+
+                    if (p.life <= 0) {
+                        this.particles.splice(i, 1);
+                        i--;
+                    }
+                }
+                this.ctx.globalAlpha = 1;
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        /* --- OYUN MOTORU (Troll Logic) --- */
+        class GameEngine {
+            constructor() {
+                this.score = 1000;
+                this.target = 2000;
+                this.combo = 1.0;
+                this.isPlaying = false;
+                this.audio = new SoundEngine();
+                this.particles = new ParticleSystem();
+                
+                this.ui = {
+                    score: document.getElementById('score'),
+                    startScreen: document.getElementById('start-screen'),
+                    endScreen: document.getElementById('end-screen'),
+                    counterContainer: document.getElementById('counter-container'),
+                    combo: document.getElementById('combo-display'),
+                    bar: document.getElementById('integrity-bar'),
+                    body: document.body
+                };
+
+                // Click Listener (Tüm Ekran)
+                document.addEventListener('mousedown', (e) => this.handleClick(e));
+                document.addEventListener('touchstart', (e) => this.handleClick(e.touches[0]), {passive: false});
+            }
+
+            start() {
+                this.score = 1000;
+                this.combo = 1.0;
+                this.isPlaying = true;
+                this.ui.startScreen.classList.add('hidden');
+                this.ui.endScreen.classList.add('hidden');
+                this.updateUI();
+                this.audio.playClick(); // Başlangıç sesi
+            }
+
+            restart() {
+                this.start();
+                this.ui.body.style.backgroundColor = "#050505";
+                document.getElementById('end-title').style.color = "#ff0055";
+            }
+
+            handleClick(e) {
+                if (!this.isPlaying) return;
+
+                // Efektler
+                this.particles.spawn(e.clientX, e.clientY, 15, this.combo > 3 ? '#ff0055' : '#00f3ff');
+                this.audio.playClick();
+                this.shakeScreen();
+                this.showFloatingText(e.clientX, e.clientY);
+
+                // --- TROLL MANTIĞI ---
+                // Oyuncu combo yaptığını sanır, combo arttıkça düşüş miktarı artar.
+                this.combo += 0.1;
+                
+                // Düşüş Formülü: Temel düşüş (5-15) * Combo Çarpanı
+                // Oyuncu hızlı tıkladıkça combo artar, combo arttıkça daha hızlı puan kaybeder.
+                let dropAmount = Math.floor((Math.random() * 10 + 5) * this.combo);
+                
+                // Bazen ekstra "kritik hata" düşüşü yap
+                if (Math.random() > 0.9) {
+                    dropAmount *= 2; 
+                }
+
+                this.score -= dropAmount;
+
+                // UI Güncelleme
+                this.updateUI();
+                this.checkGameState();
+            }
+
+            showFloatingText(x, y) {
+                const el = document.createElement('div');
+                el.className = 'floating-text';
+                
+                // Oyuncuya gösterilen YALAN metinler
+                const phrases = ["+1", "+1", "PERFECT", "CRITICAL", "FASTER!", "BOOST"];
+                const text = phrases[Math.floor(Math.random() * phrases.length)];
+                
+                el.innerText = text;
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                
+                // Combo yüksekse metin rengi kırmızıya dönsün (tehlike sinyali ama oyuncu güç sandın)
+                el.style.color = this.combo > 3 ? '#ff0055' : '#00f3ff';
+
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1000);
+            }
+
+            shakeScreen() {
+                this.ui.counterContainer.style.transform = `scale(${1 + Math.random() * 0.1}) rotate(${Math.random() * 4 - 2}deg)`;
+                setTimeout(() => {
+                    this.ui.counterContainer.style.transform = 'scale(1) rotate(0deg)';
+                }, 50);
+            }
+
+            updateUI() {
+                this.ui.score.innerText = this.score;
+                this.ui.combo.innerText = `COMBO: x${this.combo.toFixed(1)}`;
+                
+                // Bar, score 1000 üzerinden yüzde olarak azalır
+                let percent = Math.max(0, (this.score / 1000) * 100);
+                this.ui.bar.style.width = `${percent}%`;
+                
+                // Bar rengi kırmızıya dönsün
+                if (percent < 30) this.ui.bar.style.backgroundColor = '#ff0055';
+                else this.ui.bar.style.backgroundColor = '#00f3ff';
+            }
+
+            checkGameState() {
+                if (this.score >= 2000) {
+                    // Teorik olarak imkansız kazanma
+                    this.endGame(true);
+                } else if (this.score <= 0) {
+                    // Kaybetme
+                    this.score = 0;
+                    this.updateUI();
+                    this.endGame(false);
+                }
+            }
+
+            endGame(win) {
+                this.isPlaying = false;
+                this.ui.endScreen.classList.remove('hidden');
+                
+                if (win) {
+                    document.getElementById('end-title').innerText = "SYSTEM HACKED";
+                    document.getElementById('end-reason').innerText = "You are the chosen one.";
+                    this.ui.body.style.backgroundColor = "#00ff00";
+                } else {
+                    this.audio.playFail();
+                    document.getElementById('end-title').innerText = "SYSTEM FAILURE";
+                    // Troll bir mesaj seç
+                    const reasons = [
+                        "Daha hızlı tıklamalıydın!",
+                        "İşlemcin (parmağın) çok yavaş.",
+                        "Mouse'un pili mi bitti?",
+                        "Ping: 9999ms tespit edildi.",
+                        "Yetersiz Bant Genişliği."
+                    ];
+                    document.getElementById('end-reason').innerText = reasons[Math.floor(Math.random() * reasons.length)];
+                    this.ui.body.style.backgroundColor = "#220000";
+                    this.ui.body.classList.add('glitch-active');
+                    setTimeout(() => this.ui.body.classList.remove('glitch-active'), 500);
+                }
+            }
+        }
+
+        // Oyunu Başlat
+        const game = new GameEngine();
+
+    </script>
 </body>
 </html>
