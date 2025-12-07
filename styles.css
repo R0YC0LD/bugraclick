@@ -1,0 +1,110 @@
+/* Temel Ayarlar */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none; /* Metin seçimini engeller, spam tıklama için önemli */
+    -webkit-user-select: none;
+}
+
+body {
+    background-color: #1a1a1a; /* Koyu gri başlangıç */
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    height: 100vh;
+    overflow: hidden; /* Scroll oluşmasını engelle */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.5s ease;
+    cursor: pointer; /* Her yer tıklanabilir hissi */
+}
+
+/* Sayaç Stilleri */
+#counter {
+    font-size: 8rem;
+    font-weight: bold;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    transition: transform 0.05s ease; /* Titreme efekti için hızlı geçiş */
+}
+
+.hint {
+    text-align: center;
+    opacity: 0.6;
+    margin-top: 10px;
+    font-size: 1.2rem;
+}
+
+/* Tıklama Efekti (+1 Yazısı) */
+.plus-one {
+    position: absolute;
+    color: #4cd137; /* Güven verici yeşil renk */
+    font-size: 1.5rem;
+    font-weight: bold;
+    pointer-events: none; /* Tıklamayı engellememesi için */
+    animation: floatUp 0.8s ease-out forwards;
+}
+
+@keyframes floatUp {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-50px) scale(1.5);
+    }
+}
+
+/* Oyun Sonu Ekranı */
+#end-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 10;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#end-message {
+    font-size: 3rem;
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 0 20px;
+}
+
+#restart-btn {
+    padding: 15px 40px;
+    font-size: 1.5rem;
+    background-color: white;
+    color: #333;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+}
+
+#restart-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Sayaç Titreme Animasyonu */
+.shake {
+    animation: shakeAnim 0.1s;
+}
+
+@keyframes shakeAnim {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
