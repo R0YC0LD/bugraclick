@@ -2,749 +2,629 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CYBER BREACH: SYSTEM FAILURE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CYBER BREACH: NETRUNNER</title>
     <style>
-        /* --- VISUAL CORE --- */
+        /* --- RESET & CORE --- */
         :root {
-            --bg-dark: #050505;
-            --panel-bg: rgba(10, 12, 16, 0.95);
-            --neon-cyan: #00f3ff;
-            --neon-pink: #ff0055;
-            --neon-green: #00ff66;
-            --neon-gold: #ffcc00;
-            --font-main: 'Courier New', monospace;
+            --bg: #030507;
+            --glass: rgba(10, 20, 30, 0.85);
+            --border: rgba(0, 243, 255, 0.2);
+            --cyan: #00f3ff;
+            --pink: #ff003c;
+            --yellow: #fcee0a;
+            --green: #00ff88;
+            --font: 'Segoe UI', 'Roboto', monospace;
+            --font-mono: 'Courier New', monospace;
         }
-
-        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; cursor: crosshair; }
-
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; cursor: default; }
+        
         body {
-            margin: 0; background-color: var(--bg-dark); color: white;
-            font-family: var(--font-main); height: 100vh; overflow: hidden;
-            display: flex; justify-content: center; align-items: center;
+            margin: 0; background: var(--bg); color: #fff; font-family: var(--font);
+            height: 100vh; overflow: hidden; display: flex; flex-direction: column;
         }
 
-        /* Glitch Efekti (Risk Arttıkça Body'e Eklenir) */
-        .glitch-effect {
-            animation: glitch-anim 0.2s infinite;
+        /* --- BACKGROUND FX --- */
+        .hex-bg {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.05) 0%, transparent 60%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            animation: bgPulse 10s infinite alternate;
         }
+        @keyframes bgPulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        @keyframes glitch-anim {
-            0% { transform: translate(0) }
-            20% { transform: translate(-2px, 2px) }
-            40% { transform: translate(-2px, -2px) }
-            60% { transform: translate(2px, 2px) }
-            80% { transform: translate(2px, -2px) }
-            100% { transform: translate(0) }
-        }
-
-        /* Arkaplan */
-        .cyber-grid {
-            position: absolute; width: 200vw; height: 200vh;
-            background-image: linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
-            animation: gridMove 20s linear infinite; z-index: -2;
-        }
-        @keyframes gridMove { 0% { transform: perspective(500px) rotateX(60deg) translateY(0); } 100% { transform: perspective(500px) rotateX(60deg) translateY(40px); } }
-
-        /* CRT Ekran Çizgileri */
+        /* Scanlines */
         .scanlines {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px);
-            pointer-events: none; z-index: 50;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px; opacity: 0.6;
         }
 
         /* --- LAYOUT --- */
-        #game-layout {
-            display: grid; grid-template-columns: 300px 1fr 320px; gap: 15px;
-            width: 98vw; height: 95vh; max-width: 1800px; z-index: 10;
-            transition: opacity 0.2s;
+        #app-container {
+            display: flex; height: 100%; width: 100%; max-width: 1600px; margin: 0 auto;
         }
 
-        .panel {
-            background: var(--panel-bg); border: 1px solid rgba(0, 243, 255, 0.2);
-            padding: 15px; display: flex; flex-direction: column;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8); backdrop-filter: blur(5px);
-            border-radius: 4px; position: relative; overflow: hidden;
+        /* SIDEBAR (NAV) */
+        nav {
+            width: 80px; background: rgba(0,0,0,0.5); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; align-items: center; padding-top: 20px;
+            z-index: 100; backdrop-filter: blur(10px);
         }
+        .nav-btn {
+            width: 50px; height: 50px; margin-bottom: 20px; border-radius: 8px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.5rem; color: #555; border: 1px solid transparent;
+            cursor: pointer; transition: 0.3s;
+        }
+        .nav-btn:hover { color: var(--cyan); background: rgba(0, 243, 255, 0.1); }
+        .nav-btn.active { color: var(--bg); background: var(--cyan); box-shadow: 0 0 15px var(--cyan); }
 
-        h2 { 
-            font-size: 1rem; border-bottom: 1px solid #333; padding-bottom: 8px; 
-            margin: 0 0 10px 0; color: var(--neon-cyan); text-shadow: 0 0 5px var(--neon-cyan);
+        /* MAIN CONTENT AREA */
+        main { flex-grow: 1; position: relative; overflow: hidden; }
+
+        .view-section {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            padding: 20px; display: none; opacity: 0; transition: opacity 0.3s;
+            overflow-y: auto;
+        }
+        .view-section.active { display: block; opacity: 1; }
+
+        /* --- HEADER STATS (Global) --- */
+        header {
+            position: absolute; top: 0; left: 80px; right: 0; height: 60px;
             display: flex; justify-content: space-between; align-items: center;
+            padding: 0 30px; background: linear-gradient(180deg, rgba(0,0,0,0.8), transparent);
+            z-index: 90; pointer-events: none;
         }
+        .stat-group { display: flex; gap: 30px; }
+        .stat-item { text-align: right; }
+        .stat-label { font-size: 0.7rem; color: #888; letter-spacing: 1px; }
+        .stat-val { font-size: 1.2rem; font-weight: bold; font-family: var(--font-mono); text-shadow: 0 0 10px currentColor; }
+        .color-gold { color: var(--yellow); }
+        .color-blue { color: var(--cyan); }
 
-        /* --- HACK BUTTON --- */
-        #hack-container {
-            flex-grow: 1; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; position: relative;
-        }
+        /* --- TERMINAL VIEW --- */
+        #view-terminal { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
 
-        #hack-btn {
-            width: 250px; height: 250px; border-radius: 50%;
-            border: 5px solid var(--neon-cyan);
-            background: radial-gradient(circle, rgba(0, 243, 255, 0.1) 0%, rgba(0,0,0,0.9) 100%);
+        #hack-trigger {
+            width: 280px; height: 280px; border-radius: 50%;
+            border: 2px solid var(--cyan);
+            background: radial-gradient(circle, rgba(0, 243, 255, 0.1) 0%, rgba(0,0,0,0.9) 70%);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            box-shadow: 0 0 40px rgba(0, 243, 255, 0.15), inset 0 0 20px rgba(0, 243, 255, 0.1);
-            transition: 0.1s; position: relative; z-index: 5; cursor: pointer;
+            cursor: pointer; position: relative; transition: 0.1s; z-index: 10;
         }
-        #hack-btn:active { transform: scale(0.95); border-color: white; box-shadow: 0 0 60px var(--neon-cyan); }
-        #hack-btn.danger { border-color: var(--neon-pink); animation: shake 0.3s infinite; box-shadow: 0 0 50px var(--neon-pink); }
+        #hack-trigger:active { transform: scale(0.95); border-width: 5px; box-shadow: 0 0 60px var(--cyan); }
+        #hack-trigger.danger { border-color: var(--pink); box-shadow: 0 0 40px var(--pink); animation: shake 0.3s infinite; }
+        #hack-trigger::after {
+            content: ''; position: absolute; inset: 10px; border-radius: 50%;
+            border: 1px dashed rgba(255,255,255,0.3); animation: spin 10s linear infinite;
+        }
+        @keyframes spin { from {transform: rotate(0deg);} to {transform: rotate(360deg);} }
 
-        .btn-icon { font-size: 4.5rem; pointer-events: none; text-shadow: 0 0 15px currentColor; }
+        .trigger-icon { font-size: 4rem; margin-bottom: 10px; filter: drop-shadow(0 0 10px var(--cyan)); pointer-events: none; }
+        .trigger-text { font-size: 1rem; letter-spacing: 3px; font-weight: bold; color: #fff; pointer-events: none; }
 
-        /* --- BARS & STATS --- */
-        .progress-bar { height: 12px; background: #000; border: 1px solid #444; position: relative; overflow: hidden; margin-top: 5px; }
-        .fill { height: 100%; width: 0%; transition: width 0.1s linear; }
+        /* Bars */
+        .bar-container { width: 400px; margin-top: 40px; }
+        .bar-row { margin-bottom: 15px; }
+        .bar-info { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px; color: #aaa; }
+        .progress-track { height: 8px; background: #111; border: 1px solid #333; position: relative; overflow: hidden; border-radius: 4px; }
+        .progress-fill { height: 100%; width: 0%; transition: width 0.1s linear; }
+        .fill-cyan { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+        .fill-pink { background: var(--pink); box-shadow: 0 0 10px var(--pink); }
+
+        /* Console Log (Mini) */
+        #mini-console {
+            position: absolute; bottom: 20px; left: 20px; width: 300px; height: 150px;
+            background: rgba(0,0,0,0.8); border-left: 2px solid var(--green);
+            padding: 10px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--green);
+            overflow: hidden; display: flex; flex-direction: column-reverse; pointer-events: none;
+        }
+        .log-line { margin-bottom: 2px; opacity: 0.8; }
+
+        /* --- NETWORK VIEW (Levels) --- */
+        #network-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px; padding-top: 60px;
+        }
+        .net-card {
+            background: var(--glass); border: 1px solid #333; padding: 20px;
+            border-radius: 6px; position: relative; overflow: hidden; transition: 0.3s;
+            cursor: pointer; display: flex; flex-direction: column; gap: 10px;
+        }
+        .net-card:hover { border-color: var(--cyan); transform: translateY(-5px); }
+        .net-card.active { border-color: var(--green); box-shadow: inset 0 0 20px rgba(0, 255, 136, 0.2); }
+        .net-card.locked { opacity: 0.5; filter: grayscale(1); pointer-events: none; border-color: #222; }
         
-        /* Level Bar */
-        #xp-container { width: 100%; margin-bottom: 20px; }
-        #xp-bar { height: 6px; background: #333; margin-top: 5px; }
-        #xp-fill { height: 100%; background: var(--neon-gold); width: 0%; box-shadow: 0 0 10px var(--neon-gold); }
-
-        /* --- SHOP ITEMS --- */
-        .upgrade {
-            display: flex; align-items: center; padding: 10px; margin-bottom: 8px;
-            background: rgba(255,255,255,0.02); border: 1px solid #333; transition: 0.2s; cursor: pointer;
-        }
-        .upgrade:hover { background: rgba(255, 204, 0, 0.05); border-color: var(--neon-gold); }
-        .upgrade.disabled { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
-        .up-icon { font-size: 1.5rem; margin-right: 10px; width: 30px; text-align: center; }
-        .up-info { flex-grow: 1; }
-        .up-name { font-weight: bold; font-size: 0.9rem; color: #fff; }
-        .up-desc { font-size: 0.7rem; color: #888; }
-        .up-cost { font-weight: bold; color: var(--neon-gold); font-size: 0.9rem; }
-
-        /* --- CRASH SCREEN OVERLAY --- */
-        #crash-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: black; z-index: 9999; display: none;
-            flex-direction: column; justify-content: center; align-items: center;
-            font-family: 'Courier New', monospace;
-        }
-        .crash-text { color: var(--neon-pink); font-size: 2rem; margin-bottom: 20px; text-align: center; }
-        .boot-text { color: var(--neon-green); font-size: 1rem; text-align: left; width: 80%; margin-top: 5px; }
-        .cursor { animation: blink 1s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-        /* --- ANIMATIONS --- */
-        .floating-text {
-            position: absolute; font-size: 1.5rem; font-weight: bold; 
-            animation: floatUp 0.8s forwards; pointer-events: none; z-index: 100;
-            text-shadow: 0 0 5px black;
-        }
-        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-80px) scale(1.5); opacity: 0; } }
-
-        #console-log {
-            height: 150px; background: #000; border: 1px solid #333; padding: 10px;
-            font-size: 0.75rem; color: var(--neon-green); overflow: hidden;
-            display: flex; flex-direction: column-reverse;
-        }
-        .log-line { margin-bottom: 3px; border-left: 2px solid var(--neon-green); padding-left: 5px; }
-
-        /* Music Toggle */
-        #music-btn {
-            position: absolute; top: 15px; right: 15px; z-index: 200;
-            background: black; border: 1px solid var(--neon-cyan); color: var(--neon-cyan);
-            padding: 5px 10px; cursor: pointer; font-size: 0.8rem;
+        .net-icon { font-size: 2rem; color: var(--cyan); }
+        .net-title { font-weight: bold; font-size: 1.1rem; }
+        .net-reward { color: var(--yellow); font-size: 0.9rem; font-family: var(--font-mono); }
+        .net-sec { font-size: 0.8rem; color: var(--pink); }
+        .lock-overlay { 
+            position: absolute; inset: 0; background: rgba(0,0,0,0.6); 
+            display: flex; justify-content: center; align-items: center; font-size: 3rem; color: #555;
         }
 
-        @media (max-width: 900px) {
-            #game-layout { grid-template-columns: 1fr; display: flex; flex-direction: column; overflow-y: auto; }
-            .panel { margin-bottom: 10px; }
+        /* --- MARKET VIEW --- */
+        #market-list { display: flex; flex-direction: column; gap: 10px; padding-top: 60px; max-width: 800px; margin: 0 auto; }
+        .shop-item {
+            display: flex; align-items: center; background: var(--glass); border: 1px solid #333;
+            padding: 15px; border-radius: 6px; transition: 0.2s; cursor: pointer;
         }
+        .shop-item:hover { background: rgba(255, 255, 255, 0.05); border-color: var(--yellow); }
+        .shop-item.disabled { opacity: 0.4; pointer-events: none; }
+        
+        .item-icon { width: 50px; height: 50px; background: #111; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; margin-right: 20px; border-radius: 4px; border: 1px solid #333; }
+        .item-info { flex-grow: 1; }
+        .item-name { font-weight: bold; color: #fff; }
+        .item-desc { font-size: 0.8rem; color: #888; }
+        .item-cost { font-family: var(--font-mono); color: var(--yellow); font-weight: bold; }
+
+        /* --- ANIMATIONS & FX --- */
+        .particle {
+            position: absolute; font-family: var(--font-mono); font-weight: bold; color: var(--cyan);
+            pointer-events: none; animation: floatAndFade 1s forwards; font-size: 1.2rem; z-index: 99;
+        }
+        @keyframes floatAndFade { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-50px); } }
+
+        @keyframes shake { 0% { transform: translate(1px, 1px) } 25% { transform: translate(-2px, -2px) } 50% { transform: translate(2px, 0px) } 75% { transform: translate(-1px, 2px) } }
+
+        /* Glitch Class for Body */
+        .glitch-mode { animation: glitchSkew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite; }
+        @keyframes glitchSkew { 
+            0% { transform: translate(0) } 
+            20% { transform: translate(-2px, 2px) } 
+            40% { transform: translate(-2px, -2px) } 
+            60% { transform: translate(2px, 2px) } 
+            80% { transform: translate(2px, -2px) } 
+            100% { transform: translate(0) } 
+        }
+
+        /* Crash Overlay */
+        #crash-screen {
+            position: fixed; inset: 0; background: #000; z-index: 10000;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            font-family: var(--font-mono);
+        }
+        .boot-line { color: var(--green); width: 600px; margin-bottom: 2px; font-size: 0.9rem; }
+
     </style>
 </head>
 <body>
 
-    <div class="cyber-grid"></div>
+    <div class="hex-bg"></div>
     <div class="scanlines"></div>
 
-    <button id="music-btn" onclick="game.toggleAudio()">SES: KAPALI</button>
+    <div id="app-container">
+        
+        <nav>
+            <div class="nav-btn active" onclick="game.ui.switchTab('terminal')" title="Terminal">⌨</div>
+            <div class="nav-btn" onclick="game.ui.switchTab('network')" title="Ağ Haritası">🌐</div>
+            <div class="nav-btn" onclick="game.ui.switchTab('market')" title="Karaborsa">🛒</div>
+            
+            <div style="margin-top: auto; margin-bottom: 20px; font-size: 1.2rem; cursor: pointer;" onclick="game.audio.toggle()" id="mute-btn">🔇</div>
+        </nav>
 
-    <div id="crash-overlay">
-        <div class="crash-text" id="crash-title">SYSTEM FAILURE</div>
-        <div id="boot-sequence"></div>
+        <header>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="font-weight: bold; letter-spacing: 2px;">HEDEF: <span id="target-name-display" style="color:var(--cyan)">Seçiliyor...</span></div>
+            </div>
+            <div class="stat-group">
+                <div class="stat-item">
+                    <div class="stat-label">SEVİYE</div>
+                    <div class="stat-val color-blue"><span id="lvl-val">1</span></div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">BAKİYE</div>
+                    <div class="stat-val color-gold"><span id="money-val">0</span> ₿</div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div id="view-terminal" class="view-section active">
+                <div id="hack-trigger" onmousedown="game.logic.hack(event)">
+                    <div class="trigger-icon">☠</div>
+                    <div class="trigger-text">BAĞLAN</div>
+                    <div style="position:absolute; bottom:30px; font-size:0.7rem; color:#aaa;" id="cps-display">READY</div>
+                </div>
+
+                <div class="bar-container">
+                    <div class="bar-row">
+                        <div class="bar-info"><span>VERİ AKTARIMI</span><span id="breach-txt">0%</span></div>
+                        <div class="progress-track"><div id="breach-bar" class="progress-fill fill-cyan"></div></div>
+                    </div>
+                    <div class="bar-row">
+                        <div class="bar-info"><span style="color:var(--pink)">TESPİT RİSKİ</span><span id="risk-txt">0%</span></div>
+                        <div class="progress-track"><div id="risk-bar" class="progress-fill fill-pink"></div></div>
+                    </div>
+                </div>
+
+                <div style="position: absolute; top: 80px; width: 300px; text-align: center;">
+                    <div style="font-size: 0.7rem; color: #666; margin-bottom: 5px;">SONRAKİ SEVİYE</div>
+                    <div class="progress-track" style="height: 4px;"><div id="xp-bar" class="progress-fill" style="background: white;"></div></div>
+                </div>
+            </div>
+
+            <div id="view-network" class="view-section">
+                <h2 style="margin-top: 50px; font-size: 1.5rem; color: #fff;">AĞ HARİTASI</h2>
+                <div id="network-grid">
+                    </div>
+            </div>
+
+            <div id="view-market" class="view-section">
+                <h2 style="margin-top: 50px; font-size: 1.5rem; color: #fff;">KARABORSA YAZILIMLARI</h2>
+                <div id="market-list">
+                    </div>
+            </div>
+        </main>
+
+        <div id="mini-console"></div>
+
     </div>
 
-    <div id="game-layout">
-        
-        <div class="panel">
-            <h2>HEDEF SİSTEMLER</h2>
-            <div id="target-list"></div>
-            
-            <div style="margin-top: auto;">
-                <h2>SİSTEM GÜNLÜĞÜ</h2>
-                <div id="console-log"></div>
-            </div>
-        </div>
-
-        <div class="panel" id="hack-container">
-            <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 20px;">
-                <div style="text-align: center;">
-                    <div style="color:#888; font-size:0.8rem;">UPTIME</div>
-                    <div id="uptime-display" style="color:white; font-weight:bold;">00:00:00</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="color:#888; font-size:0.8rem;">BAKİYE</div>
-                    <div id="money-display" style="color:var(--neon-gold); font-size:1.5rem; font-weight:bold;">0 ₿</div>
-                </div>
-            </div>
-
-            <div id="xp-container">
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
-                    <span style="color:var(--neon-cyan);">SEVİYE <span id="lvl-display">1</span></span>
-                    <span style="color:#888;">XP</span>
-                </div>
-                <div id="xp-bar"><div id="xp-fill"></div></div>
-            </div>
-
-            <div style="font-size: 0.8rem; color: #888; margin-bottom: 10px;">
-                ZAMAN ÇARPANI: <span id="time-multi" style="color:white; font-weight:bold;">x1.0</span>
-            </div>
-
-            <div id="hack-btn" onclick="game.hack(event)">
-                <div class="btn-icon">☠</div>
-                <div style="margin-top:10px; letter-spacing:2px; color:var(--neon-cyan);">BAĞLAN</div>
-                <div id="cps-meter" style="position: absolute; bottom: 30px; font-size: 0.7rem; color: #666;">READY</div>
-            </div>
-
-            <div style="width: 80%; margin-top: 30px;">
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:bold;">
-                    <span style="color:var(--neon-green)">VERİ AKTARIMI</span>
-                    <span id="breach-val">0%</span>
-                </div>
-                <div class="progress-bar" style="border-color:var(--neon-green);">
-                    <div class="fill" id="breach-bar" style="background:var(--neon-green); box-shadow:0 0 10px var(--neon-green);"></div>
-                </div>
-
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:bold; margin-top:15px;">
-                    <span style="color:var(--neon-pink)">TESPİT RİSKİ</span>
-                    <span id="risk-val">0%</span>
-                </div>
-                <div class="progress-bar" style="border-color:var(--neon-pink);">
-                    <div class="fill" id="risk-bar" style="background:var(--neon-pink); box-shadow:0 0 10px var(--neon-pink);"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="panel">
-            <h2>KARABORSA <span id="passive-val" style="font-size:0.7rem;">0/sn</span></h2>
-            <div id="shop-list" style="overflow-y: auto; height: 100%;">
-                
-                <div class="upgrade" id="btn-cpu" onclick="game.buy('cpu')">
-                    <div class="up-icon">⚡</div>
-                    <div class="up-info"><div class="up-name">CPU Overclock</div><div class="up-desc">Aktif hack hızını arttırır.</div></div>
-                    <div class="up-cost" id="cost-cpu">50</div>
-                </div>
-
-                <div class="upgrade" id="btn-neural" onclick="game.buy('neural')">
-                    <div class="up-icon">🧠</div>
-                    <div class="up-info"><div class="up-name">Sinirsel Ağ</div><div class="up-desc">Tıklama gücü x2.</div></div>
-                    <div class="up-cost" id="cost-neural">500</div>
-                </div>
-
-                <div class="upgrade" id="btn-bot" onclick="game.buy('bot')">
-                    <div class="up-icon">🤖</div>
-                    <div class="up-info"><div class="up-name">Botnet V1</div><div class="up-desc">Otomatik sızma sağlar.</div></div>
-                    <div class="up-cost" id="cost-bot">250</div>
-                </div>
-
-                <div class="upgrade" id="btn-mine" onclick="game.buy('mine')">
-                    <div class="up-icon">⛏️</div>
-                    <div class="up-info"><div class="up-name">Kripto Rig</div><div class="up-desc">Pasif gelir üretir.</div></div>
-                    <div class="up-cost" id="cost-mine">600</div>
-                </div>
-
-                <div class="upgrade" id="btn-server" onclick="game.buy('server')">
-                    <div class="up-icon">⬛</div>
-                    <div class="up-info"><div class="up-name">Kuantum Sunucu</div><div class="up-desc">Devasa pasif gelir.</div></div>
-                    <div class="up-cost" id="cost-server">5000</div>
-                </div>
-
-                <div class="upgrade" id="btn-cool" onclick="game.buy('cool')">
-                    <div class="up-icon">❄️</div>
-                    <div class="up-info"><div class="up-name">Sıvı Soğutma</div><div class="up-desc">Risk düşüşünü hızlandırır.</div></div>
-                    <div class="up-cost" id="cost-cool">200</div>
-                </div>
-
-                <div class="upgrade" id="btn-stealth" onclick="game.buy('stealth')">
-                    <div class="up-icon">👻</div>
-                    <div class="up-info"><div class="up-name">Hayalet VPN</div><div class="up-desc">Tespit edilmeyi zorlaştırır.</div></div>
-                    <div class="up-cost" id="cost-stealth">400</div>
-                </div>
-
-            </div>
-        </div>
+    <div id="crash-screen">
+        <div style="color:var(--pink); font-size: 3rem; margin-bottom: 30px; text-shadow: 0 0 20px var(--pink);">CRITICAL_FAILURE</div>
+        <div id="boot-log"></div>
     </div>
 
     <script>
-        /* --- SES SİSTEMİ (GLITCH & AMBIENCE) --- */
-        class AudioSystem {
-            constructor() {
-                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                this.isMuted = true;
-                this.drone = null;
-            }
-
+        /* --- SES MOTORU (Synth) --- */
+        const audio = {
+            ctx: new (window.AudioContext || window.webkitAudioContext)(),
+            muted: true,
+            
             toggle() {
                 if(this.ctx.state === 'suspended') this.ctx.resume();
-                this.isMuted = !this.isMuted;
-                const btn = document.getElementById('music-btn');
-                
-                if(!this.isMuted) {
-                    this.startDrone();
-                    btn.innerText = "SES: AÇIK";
-                    btn.style.borderColor = "var(--neon-green)";
-                    btn.style.color = "var(--neon-green)";
-                } else {
-                    if(this.drone) this.drone.stop();
-                    btn.innerText = "SES: KAPALI";
-                    btn.style.borderColor = "var(--neon-cyan)";
-                    btn.style.color = "var(--neon-cyan)";
-                }
-            }
+                this.muted = !this.muted;
+                document.getElementById('mute-btn').innerText = this.muted ? "🔇" : "🔊";
+                if(!this.muted) this.playTone(100, 'sine', 0.1);
+            },
 
-            startDrone() {
-                // Karanlık Cyberpunk Ambiyans
-                const osc = this.ctx.createOscillator();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(50, this.ctx.currentTime);
-                
-                const filter = this.ctx.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(200, this.ctx.currentTime);
-
-                // LFO Efekti
-                const lfo = this.ctx.createOscillator();
-                lfo.frequency.value = 0.1;
-                const lfoGain = this.ctx.createGain();
-                lfoGain.gain.value = 100;
-                lfo.connect(lfoGain);
-                lfoGain.connect(filter.frequency);
-                lfo.start();
-
-                const gain = this.ctx.createGain();
-                gain.gain.value = 0.1;
-
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                this.drone = osc;
-            }
-
-            sfx(type) {
-                if(this.isMuted) return;
+            playTone(freq, type, dur, vol=0.1) {
+                if(this.muted) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-                const t = this.ctx.currentTime;
-
-                if (type === 'click') {
-                    osc.frequency.setValueAtTime(800, t);
-                    osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
-                    gain.gain.setValueAtTime(0.1, t);
-                    gain.gain.linearRampToValueAtTime(0, t + 0.1);
-                    osc.start(t); osc.stop(t + 0.1);
-                } else if (type === 'cash') {
-                    osc.type = 'square';
-                    osc.frequency.setValueAtTime(1000, t);
-                    osc.frequency.linearRampToValueAtTime(2000, t + 0.1);
-                    gain.gain.setValueAtTime(0.1, t);
-                    gain.gain.linearRampToValueAtTime(0, t + 0.3);
-                    osc.start(t); osc.stop(t + 0.3);
-                } else if (type === 'crash') {
-                    // White Noise for Crash
-                    const bufferSize = this.ctx.sampleRate * 2; 
-                    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                    const data = buffer.getChannelData(0);
-                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-                    const noise = this.ctx.createBufferSource();
-                    noise.buffer = buffer;
-                    noise.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    gain.gain.setValueAtTime(0.5, t);
-                    gain.gain.exponentialRampToValueAtTime(0.01, t + 1);
-                    noise.start(t);
-                    return; 
-                }
-
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + dur);
+            },
+
+            sfx(type) {
+                if(this.muted) return;
+                const now = this.ctx.currentTime;
+                if(type === 'click') {
+                    this.playTone(600 + Math.random()*200, 'triangle', 0.1, 0.1);
+                } else if(type === 'money') {
+                    this.playTone(1200, 'square', 0.1, 0.05);
+                    setTimeout(() => this.playTone(1800, 'square', 0.2, 0.05), 100);
+                } else if(type === 'error') {
+                    this.playTone(150, 'sawtooth', 0.3, 0.2);
+                } else if(type === 'level') {
+                    this.playTone(400, 'sine', 0.5, 0.2);
+                    setTimeout(() => this.playTone(600, 'sine', 0.5, 0.2), 200);
+                }
             }
-        }
+        };
 
         /* --- OYUN VERİSİ --- */
-        const TARGETS = [
-            { id: 0, name: "Ev Ağı", hp: 100, sec: 1.0, reward: 50, lvl: 1 },
-            { id: 1, name: "Kafe Wi-Fi", hp: 300, sec: 1.5, reward: 150, lvl: 2 },
-            { id: 2, name: "ATM Terminali", hp: 800, sec: 2.0, reward: 400, lvl: 3 },
-            { id: 3, name: "Kurumsal Server", hp: 2000, sec: 3.5, reward: 1200, lvl: 5 },
-            { id: 4, name: "Şehir Güç Şebekesi", hp: 5000, sec: 5.0, reward: 3000, lvl: 8 },
-            { id: 5, name: "Merkez Bankası", hp: 15000, sec: 8.0, reward: 10000, lvl: 10 }
+        const LEVELS = [
+            { id: 0, name: "Yerel Ağ", reqLvl: 1, sec: 1.0, reward: 50, icon: "🏠" },
+            { id: 1, name: "Halka Açık Wi-Fi", reqLvl: 2, sec: 1.5, reward: 120, icon: "☕" },
+            { id: 2, name: "ATM Ağı", reqLvl: 3, sec: 2.2, reward: 350, icon: "🏧" },
+            { id: 3, name: "Trafik Kontrol", reqLvl: 5, sec: 3.0, reward: 800, icon: "🚦" },
+            { id: 4, name: "Kurumsal Bulut", reqLvl: 8, sec: 4.5, reward: 2000, icon: "☁️" },
+            { id: 5, name: "Merkez Bankası", reqLvl: 12, sec: 6.0, reward: 5000, icon: "🏦" },
+            { id: 6, name: "Askeri Uydu", reqLvl: 15, sec: 8.5, reward: 15000, icon: "🛰️" },
+            { id: 7, name: "Yapay Zeka Çekirdeği", reqLvl: 20, sec: 12.0, reward: 50000, icon: "🧠" }
         ];
 
-        class Game {
-            constructor() {
-                this.audio = new AudioSystem();
-                this.money = 100;
-                this.currentXP = 0;
-                this.targetXP = 100;
-                this.level = 1;
-                this.startTime = Date.now();
-                this.timeMulti = 1.0;
-                
-                this.stats = {
-                    clickPower: 2,
-                    riskCool: 2.0,
-                    autoHack: 0,
-                    passive: 0,
-                    stealth: 1.0
-                };
+        const UPGRADES = [
+            { id: 'cpu', name: 'CPU Overclock', desc: 'Tıklama gücünü arttırır.', base: 50, mult: 1.5, icon: '⚡' },
+            { id: 'bot', name: 'Script Bot', desc: 'Otomatik sızma sağlar.', base: 250, mult: 1.4, icon: '🤖' },
+            { id: 'cool', name: 'Nitro Soğutma', desc: 'Riskin düşüşünü hızlandırır.', base: 200, mult: 1.5, icon: '❄️' },
+            { id: 'stealth', name: 'VPN Ghost', desc: 'Tespit edilmeyi zorlaştırır.', base: 400, mult: 1.6, icon: '👻' },
+            { id: 'miner', name: 'Kripto Rig', desc: 'Pasif gelir üretir.', base: 1000, mult: 1.4, icon: '⛏️' }
+        ];
 
-                this.upgrades = { cpu:1, neural:0, bot:0, mine:0, server:0, cool:1, stealth:1 };
-                
-                this.targetId = 0;
-                this.breach = 0;
-                this.risk = 0;
-                this.isCrashed = false;
-                this.clicks = [];
-
-                this.init();
-            }
+        /* --- OYUN MOTORU --- */
+        const game = {
+            state: {
+                money: 0,
+                xp: 0,
+                lvl: 1,
+                targetId: 0,
+                breach: 0,
+                risk: 0,
+                crashed: false,
+                stats: { clickPower: 2, autoHack: 0, riskCool: 2, stealth: 1, passive: 0 },
+                upgrades: { cpu:0, bot:0, cool:0, stealth:0, miner:0 }
+            },
+            
+            vars: {
+                clicks: [],
+                targetXP: 100,
+            },
 
             init() {
-                this.renderTargets();
-                this.updatePrices();
+                this.ui.initNetwork();
+                this.ui.initMarket();
+                this.ui.updateGlobal();
                 
-                // Ana Döngü
+                // Game Loop
                 setInterval(() => this.loop(), 1000/60);
-                
-                // Zamanlayıcılar
-                setInterval(() => this.updateTimer(), 1000);
+                // Passive Income Loop
                 setInterval(() => {
-                    if(!this.isCrashed) {
-                        this.timeMulti += 0.1;
-                        document.getElementById('time-multi').innerText = "x" + this.timeMulti.toFixed(1);
+                    if(!this.state.crashed && this.state.stats.passive > 0) {
+                        this.state.money += this.state.stats.passive;
+                        this.ui.updateGlobal();
                     }
-                }, 10000);
-            }
-
-            renderTargets() {
-                const list = document.getElementById('target-list');
-                list.innerHTML = "";
-                TARGETS.forEach(t => {
-                    const el = document.createElement('div');
-                    el.className = `target-item ${this.level < t.lvl ? 'locked' : ''} ${this.targetId === t.id ? 'active' : ''}`;
-                    el.innerHTML = `
-                        <div class="t-name">${t.name}</div>
-                        <div class="t-info"><span>GÜVENLİK: x${t.sec}</span></div>
-                    `;
-                    el.onclick = () => { if(this.level >= t.lvl) this.setTarget(t.id); };
-                    list.appendChild(el);
-                });
-            }
-
-            setTarget(id) {
-                this.targetId = id;
-                this.breach = 0;
-                this.risk = 0;
-                this.renderTargets();
-                this.log(`HEDEF DEĞİŞTİRİLDİ: ${TARGETS[id].name}`);
-            }
-
-            updateTimer() {
-                const diff = Math.floor((Date.now() - this.startTime) / 1000);
-                const h = Math.floor(diff / 3600).toString().padStart(2,'0');
-                const m = Math.floor((diff % 3600) / 60).toString().padStart(2,'0');
-                const s = (diff % 60).toString().padStart(2,'0');
-                document.getElementById('uptime-display').innerText = `${h}:${m}:${s}`;
-            }
-
-            hack(e) {
-                if (this.isCrashed) return;
-
-                // CPS Hesaplama
-                const now = Date.now();
-                this.clicks.push(now);
-                this.clicks = this.clicks.filter(t => now - t < 1000);
-                const cps = this.clicks.length;
-                document.getElementById('cps-meter').innerText = cps + " CPS";
-
-                const t = TARGETS[this.targetId];
-                
-                // Sızma
-                this.breach += this.stats.clickPower;
-                
-                // Risk (Hız Cezası)
-                let speedPenalty = (cps * cps) / 12; 
-                let addedRisk = (t.sec + speedPenalty) / this.stats.stealth;
-                this.risk += addedRisk;
-
-                // Efektler
-                this.audio.sfx('click');
-                this.spawnParticles(e.clientX, e.clientY);
-
-                // Buton Animasyonu
-                const btn = document.getElementById('hack-btn');
-                btn.style.transform = "scale(0.95)";
-                setTimeout(() => btn.style.transform = "scale(1)", 50);
-
-                this.checkState();
-            }
+                }, 1000);
+            },
 
             loop() {
-                if(this.isCrashed) return;
+                if(this.state.crashed) return;
 
-                // Pasif Gelir
-                if(this.stats.passive > 0) this.money += (this.stats.passive / 60) * this.timeMulti;
-                
                 // Auto Hack
-                if(this.stats.autoHack > 0) this.breach += this.stats.autoHack / 60;
-
-                // Risk Soğutma
-                if(this.risk > 0) {
-                    this.risk -= this.stats.riskCool / 60;
-                    if(this.risk < 0) this.risk = 0;
+                if(this.state.stats.autoHack > 0) {
+                    this.state.breach += this.state.stats.autoHack / 60;
                 }
 
-                // UI Güncelleme
-                document.getElementById('money-display').innerText = Math.floor(this.money).toLocaleString() + " ₿";
-                document.getElementById('passive-val').innerText = (this.stats.passive * this.timeMulti).toFixed(1) + "/sn";
-
-                const t = TARGETS[this.targetId];
-                const bPct = Math.min(100, (this.breach / t.hp) * 100);
-                document.getElementById('breach-bar').style.width = bPct + "%";
-                document.getElementById('breach-val').innerText = Math.floor(bPct) + "%";
-
-                document.getElementById('risk-bar').style.width = Math.min(100, this.risk) + "%";
-                document.getElementById('risk-val').innerText = Math.floor(this.risk) + "%";
-
-                // XP Bar
-                const xpPct = (this.currentXP / this.targetXP) * 100;
-                document.getElementById('xp-fill').style.width = xpPct + "%";
-
-                // Glitch & Tehlike Efektleri
-                const btn = document.getElementById('hack-btn');
-                const body = document.body;
-                
-                if (this.risk > 50) {
-                    // Risk %50 üstündeyse hafif glitch başlar
-                    if(Math.random() > 0.95) body.classList.add('glitch-effect');
-                    else body.classList.remove('glitch-effect');
-                } else {
-                    body.classList.remove('glitch-effect');
+                // Risk Cooling
+                if(this.state.risk > 0) {
+                    this.state.risk -= this.state.stats.riskCool / 60;
+                    if(this.state.risk < 0) this.state.risk = 0;
                 }
-
-                if (this.risk > 80) btn.classList.add('danger');
-                else btn.classList.remove('danger');
 
                 this.checkState();
-                this.updateButtons();
-            }
+                this.ui.updateBars();
+            },
+
+            logic: {
+                hack(e) {
+                    if(game.state.crashed) return;
+
+                    // CPS Calc
+                    const now = Date.now();
+                    game.vars.clicks.push(now);
+                    game.vars.clicks = game.vars.clicks.filter(t => now - t < 1000);
+                    const cps = game.vars.clicks.length;
+                    document.getElementById('cps-display').innerText = cps + " CPS";
+
+                    const target = LEVELS[game.state.targetId];
+
+                    // Breach
+                    game.state.breach += game.state.stats.clickPower;
+
+                    // Risk (Exponential Penalty based on CPS)
+                    let penalty = (cps * cps) / 10;
+                    game.state.risk += (target.sec + penalty) / game.state.stats.stealth;
+
+                    // FX
+                    audio.sfx('click');
+                    game.ui.spawnParticle(e.clientX, e.clientY, `+${Math.floor(game.state.stats.clickPower)}`);
+                    game.ui.animButton();
+
+                    game.checkState();
+                },
+
+                buy(id) {
+                    const upg = UPGRADES.find(u => u.id === id);
+                    const cost = Math.floor(upg.base * Math.pow(upg.mult, game.state.upgrades[id]));
+                    
+                    if(game.state.money >= cost) {
+                        game.state.money -= cost;
+                        game.state.upgrades[id]++;
+                        
+                        // Apply Stats
+                        if(id === 'cpu') game.state.stats.clickPower += 2;
+                        if(id === 'bot') game.state.stats.autoHack += 5;
+                        if(id === 'cool') game.state.stats.riskCool += 1;
+                        if(id === 'stealth') game.state.stats.stealth += 0.2;
+                        if(id === 'miner') game.state.stats.passive += 10;
+
+                        audio.sfx('money');
+                        game.ui.log(`Satın alındı: ${upg.name}`);
+                        game.ui.updateGlobal();
+                        game.ui.initMarket(); // Re-render prices
+                    } else {
+                        audio.sfx('error');
+                    }
+                }
+            },
 
             checkState() {
-                const t = TARGETS[this.targetId];
+                const target = LEVELS[this.state.targetId];
 
-                // Başarılı Hack
-                if (this.breach >= t.hp) {
-                    this.breach = 0;
+                // SUCCESS
+                if(this.state.breach >= 1000) { // HP is fixed 1000 visual scale logic
+                    this.state.breach = 0;
+                    this.state.money += target.reward;
                     
-                    // ÖDÜL HESAPLAMA (Düzeltildi ve Arttırıldı)
-                    let baseReward = t.reward;
-                    let finalReward = Math.floor(baseReward * this.timeMulti);
-                    
-                    this.money += finalReward;
-                    
-                    // XP ve Level
-                    this.currentXP += t.lvl * 10;
-                    if(this.currentXP >= this.targetXP) {
-                        this.level++;
-                        this.currentXP = 0;
-                        this.targetXP = Math.floor(this.targetXP * 1.5);
-                        document.getElementById('lvl-display').innerText = this.level;
-                        this.log(`SEVİYE ATLADINIZ! YENİ SEVİYE: ${this.level}`);
-                        this.renderTargets();
+                    // XP
+                    this.state.xp += target.sec * 10;
+                    if(this.state.xp >= this.vars.targetXP) {
+                        this.state.lvl++;
+                        this.state.xp = 0;
+                        this.vars.targetXP = Math.floor(this.vars.targetXP * 1.5);
+                        audio.sfx('level');
+                        this.ui.log(`SEVİYE ATLANDI: ${this.state.lvl}`);
+                        this.ui.initNetwork(); // Unlock new levels
                     }
 
-                    this.audio.sfx('cash');
-                    this.spawnFloatText(`+${finalReward} ₿`, '#ffcc00');
-                    this.log(`BAĞLANTI BAŞARILI: ${finalReward} ₿ AKTARILDI`);
+                    audio.sfx('money');
+                    this.ui.log(`Sızma Başarılı: +${target.reward} ₿`);
+                    this.ui.updateGlobal();
                 }
 
-                // SİSTEM ÇÖKMESİ
-                if (this.risk >= 100) {
-                    this.risk = 100;
-                    this.crashSystem();
+                // CRASH
+                if(this.state.risk >= 100) {
+                    this.crash();
                 }
-            }
 
-            crashSystem() {
-                if(this.isCrashed) return;
-                this.isCrashed = true;
-                this.audio.sfx('crash');
+                // Visual Glitch if risk high
+                if(this.state.risk > 80) document.body.classList.add('glitch-mode');
+                else document.body.classList.remove('glitch-mode');
+            },
 
-                // Ekranı gizle / Çökme Ekranını Aç
-                const overlay = document.getElementById('crash-overlay');
-                overlay.style.display = 'flex';
-                document.getElementById('boot-sequence').innerHTML = "";
+            crash() {
+                if(this.state.crashed) return;
+                this.state.crashed = true;
+                audio.sfx('error');
                 
-                // Zaman Çarpanı Cezası
-                this.timeMulti = 1.0;
-                document.getElementById('time-multi').innerText = "x1.0";
+                const screen = document.getElementById('crash-screen');
+                const log = document.getElementById('boot-log');
+                screen.style.display = 'flex';
+                log.innerHTML = '';
+                document.body.classList.remove('glitch-mode');
 
-                // Boot Sequence Animasyonu
-                const logs = [
-                    "CRITICAL ERROR: KERNEL PANIC",
-                    "DUMPING PHYSICAL MEMORY...",
-                    "RISK LEVEL CRITICAL",
-                    "INITIATING SAFE MODE...",
-                    "RELOADING DRIVERS...",
-                    "RECONNECTING TO NETWORK...",
-                    "SYSTEM RECOVERED."
+                const lines = [
+                    "SYSTEM_HALT: RISK_OVERFLOW",
+                    "DUMPING MEMORY...",
+                    "RESETTING NETWORK ADAPTERS...",
+                    "LOADING SAFE KERNEL...",
+                    "SYSTEM REBOOT..."
                 ];
 
                 let i = 0;
-                const interval = setInterval(() => {
-                    if(i < logs.length) {
-                        const div = document.createElement('div');
-                        div.className = 'boot-text';
-                        div.innerText = "> " + logs[i];
-                        document.getElementById('boot-sequence').appendChild(div);
-                        this.audio.sfx('click'); // Daktilo sesi gibi
+                const int = setInterval(() => {
+                    if(i < lines.length) {
+                        log.innerHTML += `<div class="boot-line">> ${lines[i]}</div>`;
+                        audio.sfx('click');
                         i++;
                     } else {
-                        clearInterval(interval);
+                        clearInterval(int);
                         setTimeout(() => {
-                            overlay.style.display = 'none';
-                            this.isCrashed = false;
-                            this.risk = 50; // %50 Riskle geri dön
-                            this.log("SİSTEM YENİDEN BAŞLATILDI.", "red");
+                            screen.style.display = 'none';
+                            this.state.crashed = false;
+                            this.state.risk = 50;
+                            this.ui.log("Sistem yeniden başlatıldı.", "var(--pink)");
                         }, 1000);
                     }
                 }, 600);
-            }
+            },
 
-            /* --- MARKET --- */
-            getCosts() {
-                return {
-                    cpu: Math.floor(50 * Math.pow(1.4, this.upgrades.cpu)),
-                    neural: Math.floor(500 * Math.pow(1.5, this.upgrades.neural)),
-                    bot: Math.floor(250 * Math.pow(1.4, this.upgrades.bot)),
-                    mine: Math.floor(600 * Math.pow(1.4, this.upgrades.mine)),
-                    server: Math.floor(5000 * Math.pow(1.5, this.upgrades.server)),
-                    cool: Math.floor(200 * Math.pow(1.5, this.upgrades.cool)),
-                    stealth: Math.floor(400 * Math.pow(1.6, this.upgrades.stealth))
-                };
-            }
+            ui: {
+                switchTab(id) {
+                    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+                    document.getElementById(`view-${id}`).classList.add('active');
+                    // Simple active class toggle for nav buttons logic omitted for brevity, assumes order matches
+                },
 
-            updatePrices() {
-                const c = this.getCosts();
-                document.getElementById('cost-cpu').innerText = c.cpu;
-                document.getElementById('cost-neural').innerText = c.neural;
-                document.getElementById('cost-bot').innerText = c.bot;
-                document.getElementById('cost-mine').innerText = c.mine;
-                document.getElementById('cost-server').innerText = c.server;
-                document.getElementById('cost-cool').innerText = c.cool;
-                document.getElementById('cost-stealth').innerText = c.stealth;
-            }
-
-            buy(type) {
-                const cost = this.getCosts()[type];
-                if (this.money >= cost) {
-                    this.money -= cost;
-                    this.upgrades[type]++;
-                    this.audio.sfx('click');
-
-                    if(type === 'cpu') this.stats.clickPower += 2;
-                    if(type === 'neural') this.stats.clickPower *= 2; // Güçlü Upgrade
-                    if(type === 'bot') this.stats.autoHack += 5;
-                    if(type === 'mine') this.stats.passive += 10;
-                    if(type === 'server') this.stats.passive += 150;
-                    if(type === 'cool') this.stats.riskCool += 1.0;
-                    if(type === 'stealth') this.stats.stealth += 0.3;
-
-                    this.updatePrices();
-                    this.log("YÜKSELTME SATIN ALINDI.");
-                } else {
-                    this.audio.sfx('crash'); // Hata sesi
-                }
-            }
-
-            updateButtons() {
-                const c = this.getCosts();
-                const check = (id, cost) => {
-                    const btn = document.getElementById(id);
-                    if(this.money >= cost) {
-                        btn.classList.remove('disabled');
-                        btn.style.borderColor = 'var(--neon-gold)';
-                    } else {
-                        btn.classList.add('disabled');
-                        btn.style.borderColor = '#333';
-                    }
-                }
-                check('btn-cpu', c.cpu);
-                check('btn-neural', c.neural);
-                check('btn-bot', c.bot);
-                check('btn-mine', c.mine);
-                check('btn-server', c.server);
-                check('btn-cool', c.cool);
-                check('btn-stealth', c.stealth);
-            }
-
-            /* --- HELPER --- */
-            log(msg, color="#00ff66") {
-                const con = document.getElementById('console-log');
-                const line = document.createElement('div');
-                line.className = 'log-line';
-                line.style.borderColor = color;
-                line.style.color = color;
-                line.innerText = `> ${msg}`;
-                con.prepend(line);
-                if(con.children.length > 20) con.lastChild.remove();
-            }
-
-            spawnFloatText(text, color) {
-                const btn = document.getElementById('hack-btn');
-                const rect = btn.getBoundingClientRect();
-                const el = document.createElement('div');
-                el.className = 'floating-text';
-                el.innerText = text;
-                el.style.left = (rect.left + rect.width/2 - 20) + "px";
-                el.style.top = (rect.top) + "px";
-                el.style.color = color;
-                document.body.appendChild(el);
-                setTimeout(() => el.remove(), 800);
-            }
-
-            spawnParticles(x, y) {
-                for(let i=0; i<6; i++) {
-                    const p = document.createElement('div');
-                    p.style.position = 'absolute';
-                    p.style.left = x + 'px';
-                    p.style.top = y + 'px';
-                    p.style.width = '4px';
-                    p.style.height = '4px';
-                    p.style.background = 'var(--neon-cyan)';
-                    p.style.pointerEvents = 'none';
-                    p.style.transition = '0.5s';
-                    p.style.zIndex = '99';
-                    document.body.appendChild(p);
+                updateGlobal() {
+                    document.getElementById('money-val').innerText = Math.floor(game.state.money).toLocaleString();
+                    document.getElementById('lvl-val').innerText = game.state.lvl;
+                    document.getElementById('target-name-display').innerText = LEVELS[game.state.targetId].name;
                     
-                    setTimeout(() => {
-                        p.style.transform = `translate(${(Math.random()-0.5)*100}px, ${(Math.random()-0.5)*100}px)`;
-                        p.style.opacity = 0;
-                    }, 10);
-                    setTimeout(() => p.remove(), 500);
+                    const xpPct = (game.state.xp / game.vars.targetXP) * 100;
+                    document.getElementById('xp-bar').style.width = xpPct + "%";
+                },
+
+                updateBars() {
+                    // Breach is fixed visual scale 0-1000
+                    const bPct = Math.min(100, (game.state.breach / 1000) * 100);
+                    document.getElementById('breach-bar').style.width = bPct + "%";
+                    document.getElementById('breach-txt').innerText = Math.floor(bPct) + "%";
+
+                    document.getElementById('risk-bar').style.width = Math.min(100, game.state.risk) + "%";
+                    document.getElementById('risk-txt').innerText = Math.floor(game.state.risk) + "%";
+
+                    const trigger = document.getElementById('hack-trigger');
+                    if(game.state.risk > 80) trigger.classList.add('danger');
+                    else trigger.classList.remove('danger');
+                },
+
+                initNetwork() {
+                    const grid = document.getElementById('network-grid');
+                    grid.innerHTML = "";
+                    LEVELS.forEach(l => {
+                        const locked = game.state.lvl < l.reqLvl;
+                        const active = game.state.targetId === l.id;
+                        const div = document.createElement('div');
+                        div.className = `net-card ${locked ? 'locked' : ''} ${active ? 'active' : ''}`;
+                        div.onclick = () => {
+                            if(!locked) {
+                                game.state.targetId = l.id;
+                                game.state.breach = 0;
+                                game.state.risk = 0;
+                                game.ui.initNetwork();
+                                game.ui.updateGlobal();
+                                audio.sfx('click');
+                            }
+                        };
+                        div.innerHTML = `
+                            ${locked ? '<div class="lock-overlay">🔒</div>' : ''}
+                            <div class="net-icon">${l.icon}</div>
+                            <div class="net-title">${l.name}</div>
+                            <div class="net-sec">Güvenlik: x${l.sec}</div>
+                            <div class="net-reward">Ödül: ${l.reward} ₿</div>
+                        `;
+                        grid.appendChild(div);
+                    });
+                },
+
+                initMarket() {
+                    const list = document.getElementById('market-list');
+                    list.innerHTML = "";
+                    UPGRADES.forEach(u => {
+                        const cost = Math.floor(u.base * Math.pow(u.mult, game.state.upgrades[u.id]));
+                        const div = document.createElement('div');
+                        const canAfford = game.state.money >= cost;
+                        div.className = `shop-item ${canAfford ? '' : 'disabled'}`;
+                        div.onclick = () => game.logic.buy(u.id);
+                        div.innerHTML = `
+                            <div class="item-icon">${u.icon}</div>
+                            <div class="item-info">
+                                <div class="item-name">${u.name} (Lvl ${game.state.upgrades[u.id]})</div>
+                                <div class="item-desc">${u.desc}</div>
+                            </div>
+                            <div class="item-cost">${cost} ₿</div>
+                        `;
+                        list.appendChild(div);
+                    });
+                },
+
+                log(msg, color="var(--green)") {
+                    const con = document.getElementById('mini-console');
+                    const line = document.createElement('div');
+                    line.className = 'log-line';
+                    line.style.color = color;
+                    line.innerText = `> ${msg}`;
+                    con.prepend(line);
+                    if(con.children.length > 5) con.lastChild.remove();
+                },
+
+                spawnParticle(x, y, text) {
+                    const el = document.createElement('div');
+                    el.className = 'particle';
+                    el.innerText = text;
+                    el.style.left = (x - 20) + "px";
+                    el.style.top = (y - 40) + "px";
+                    document.body.appendChild(el);
+                    setTimeout(() => el.remove(), 1000);
+                },
+
+                animButton() {
+                    const btn = document.getElementById('hack-trigger');
+                    btn.style.transform = "scale(0.95)";
+                    setTimeout(() => btn.style.transform = "scale(1)", 50);
                 }
             }
+        };
 
-            toggleAudio() { this.audio.toggle(); }
-        }
-
-        const game = new Game();
+        // Start
+        game.init();
 
     </script>
 </body>
