@@ -1,358 +1,423 @@
-/* NEON HACKER - CORE LOGIC
-    Tüm mekanikler: HP, Para, Sızma, Glitch, Trace, Save/Load
+/* NEON BREACH - CORE ENGINE
+    Author: Gemini AI
+    Optimization: RequestAnimationFrame, Batch DOM Updates
 */
 
-const GAME_CONFIG = {
+// --- YAPILANDIRMA VE SABİTLER ---
+const CONFIG = {
     autoSaveInterval: 5000,
     currencyUpdateInterval: 10000,
-    baseGlitchChance: 0.02, // Her tıklamada %2 şans
-    baseTraceChance: 0.01   // Her tıklamada %1 şans
+    baseTraceChance: 0.005, // Her frame'de değil, her tıklamada kontrol
+    baseGlitchChance: 0.01,
+    eyeDuration: 4000
 };
 
-// Veri Tipleri ve Değerleri
-const DATA_TYPES = [
-    { name: "Kişisel Veri", basePrice: 10, rarity: "Düşük" },
-    { name: "Sunucu Logları", basePrice: 25, rarity: "Orta" },
-    { name: "Kredi Kartı Bilgisi", basePrice: 60, rarity: "Yüksek" },
-    { name: "Kurumsal E-posta", basePrice: 120, rarity: "Yüksek" },
-    { name: "Kripto Cüzdan Seed", basePrice: 300, rarity: "Premium" },
-    { name: "Yapay Zeka Modeli", basePrice: 500, rarity: "Premium" },
-    { name: "Gizli Devlet Projesi", basePrice: 1500, rarity: "BlackMarket" }
+const THEMES = [
+    { id: 'neon-green', name: 'Cyber Green', color: '#00ff41', cost: 0, purchased: true },
+    { id: 'neon-blue', name: 'Neon Blue', color: '#00f3ff', cost: 1000, purchased: false },
+    { id: 'red-alert', name: 'Red Terminal', color: '#ff0055', cost: 2500, purchased: false },
+    { id: 'magenta-pulse', name: 'Magenta Pulse', color: '#ff00ff', cost: 5000, purchased: false },
+    { id: 'gold-lux', name: 'Gold Luxury', color: '#ffd700', cost: 10000, purchased: false }
 ];
 
-const CURRENCIES = ['USD', 'EUR', 'GOLD', 'BTC'];
+const DATA_TYPES = [
+    { name: "Çerez Dosyası", val: 5, rarity: "Low" },
+    { name: "Kullanıcı Logları", val: 15, rarity: "Medium" },
+    { name: "Kredi Kartı ID", val: 50, rarity: "High" },
+    { name: "Şirket E-postaları", val: 120, rarity: "Premium" },
+    { name: "Devlet Sırrı", val: 500, rarity: "BlackMarket" }
+];
 
-// Ana Oyun Nesnesi
-const game = {
+// --- GAME STATE (MERKEZİ VERİ) ---
+const Game = {
     state: {
         hp: 0,
         money: 0,
+        strikes: 0,
+        glitchLevel: 0,
+        infiltration: 0,
         inventory: [],
         currencies: { USD: 0, EUR: 0, GOLD: 0, BTC: 0 },
         rates: { USD: 30, EUR: 32, GOLD: 2000, BTC: 1000000 },
-        infiltration: 0,
-        strikes: 0,
-        glitchLevel: 0,
+        themes: JSON.parse(JSON.stringify(THEMES)), // Deep copy
+        currentTheme: 'neon-green',
         upgrades: {
-            clickPower: { level: 1, cost: 50, name: "Brute Force Script" },
-            autoClicker: { level: 0, cost: 200, name: "Botnet Node" },
-            infiltrateSpeed: { level: 1, cost: 300, name: "Port Scanner" },
-            riskReducer: { level: 0, cost: 500, name: "VPN Proxy" },
-            glitchStabilizer: { level: 0, cost: 750, name: "Error Handler" }
+            clickPower: { lvl: 1, cost: 50, name: "Brute Force" },
+            autoClick: { lvl: 0, cost: 200, name: "Botnet" },
+            riskReducer: { lvl: 0, cost: 500, name: "Proxy VPN" },
+            glitchStab: { lvl: 0, cost: 750, name: "Error Handler" }
         }
     },
     
-    status: {
+    flags: {
         isTracing: false,
         isGlitching: false,
         isRebooting: false
     },
 
-    timers: {},
+    // --- SİSTEM BAŞLANGICI ---
+    system: {
+        init: function() {
+            Game.saveSystem.load();
+            Game.ui.applyTheme(Game.state.currentTheme);
+            Game.system.bootSequence();
+        },
 
-    // --- BAŞLATMA ---
-    init: function() {
-        this.loadGame();
-        this.ui.updateAll();
-        this.loops.start();
-        this.events.bind();
-        this.log("Sistem başlatıldı. Hoş geldin, Kullanıcı.");
+        bootSequence: function() {
+            const lines = [
+                "BIOS DATE 01/01/2077 14:02:55 VER 1.0.2",
+                "CPU: NEURO-CORE X9 128-CORE PROCESSOR",
+                "Checking Memory... 64TB OK",
+                "Loading Kernel... OK",
+                "Mounting File System... OK",
+                "Initializing Secure Layer... DONE",
+                "SYSTEM READY."
+            ];
+            const screen = document.getElementById('bios-text');
+            const bar = document.getElementById('boot-bar');
+            let i = 0;
+
+            const interval = setInterval(() => {
+                screen.innerText += lines[i] + "\n";
+                bar.style.width = ((i + 1) / lines.length * 100) + "%";
+                i++;
+                if (i >= lines.length) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        document.getElementById('boot-screen').classList.add('hidden');
+                        document.getElementById('main-menu').classList.remove('hidden');
+                    }, 1000);
+                }
+            }, 500);
+        },
+
+        startGame: function() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            Game.loops.start();
+            Game.ui.initListeners();
+            Game.ui.updateAll();
+        }
     },
 
     // --- TEMEL MEKANİKLER ---
-    clickHack: function() {
-        if (this.status.isRebooting) return;
-        if (this.state.strikes >= 10) return;
-
-        // Trace Cezası
-        if (this.status.isTracing) {
-            this.addStrike();
-            return;
-        }
-
-        // Glitch Cezası
-        if (this.status.isGlitching) {
-            this.increaseGlitch(10); // Glitch sırasında tıklamak glitch'i artırır
-        }
-
-        // HP Kazanımı
-        let gain = 1 + (this.state.upgrades.clickPower.level * 1.5);
-        this.state.hp += gain;
-
-        // Sızma İlerlemesi
-        let infGain = 1 + (this.state.upgrades.infiltrateSpeed.level * 0.5);
-        this.state.infiltration += infGain;
-
-        if (this.state.infiltration >= 100) {
-            this.state.infiltration = 0;
-            this.lootData();
-        }
-
-        // Rastgele Olay Tetikleme Şansı
-        this.checkRandomEvents();
-
-        this.ui.updateHP();
-        this.ui.updateInfiltration();
-    },
-
-    lootData: function() {
-        const randIndex = Math.floor(Math.random() * DATA_TYPES.length);
-        const data = DATA_TYPES[randIndex];
-        this.state.inventory.push(data);
-        this.log(`Veri sızdırıldı: [${data.rarity}] ${data.name}`);
-        this.ui.updateInventory();
-        
-        // Animasyon
-        const bar = document.getElementById('infiltration-bar');
-        bar.style.backgroundColor = '#fff';
-        setTimeout(() => bar.style.backgroundColor = '', 100);
-    },
-
-    // --- OLAYLAR (TRACE & GLITCH) ---
-    checkRandomEvents: function() {
-        // Risk Azaltıcı Yükseltmesi
-        let riskFactor = 1 / (1 + this.state.upgrades.riskReducer.level * 0.2);
-
-        // Trace Başlatma
-        if (!this.status.isTracing && Math.random() < GAME_CONFIG.baseTraceChance * riskFactor) {
-            this.startTrace();
-        }
-
-        // Glitch Başlatma
-        if (!this.status.isGlitching && Math.random() < GAME_CONFIG.baseGlitchChance * riskFactor) {
-            this.startGlitchEffect();
-        }
-    },
-
-    startTrace: function() {
-        this.status.isTracing = true;
-        document.getElementById('trace-overlay').classList.remove('hidden');
-        this.log("UYARI: DIŞ GÖZ TESPİTİ! HAREKET ETME!");
-        
-        setTimeout(() => {
-            this.status.isTracing = false;
-            document.getElementById('trace-overlay').classList.add('hidden');
-            this.log("Göz kayboldu. Güvendesin.");
-        }, 3000); // 3 saniye sürer
-    },
-
-    addStrike: function() {
-        this.state.strikes++;
-        this.ui.updateStrikes();
-        this.log("!!! STRIKE ALDIN !!!");
-        
-        // Görsel uyarı
-        document.body.style.backgroundColor = '#500';
-        setTimeout(() => document.body.style.backgroundColor = '', 200);
-
-        if (this.state.strikes >= 10) {
-            this.gameOver();
-        }
-    },
-
-    startGlitchEffect: function() {
-        this.status.isGlitching = true;
-        document.body.classList.add('glitching');
-        
-        // 2 saniye sürer
-        setTimeout(() => {
-            this.status.isGlitching = false;
-            document.body.classList.remove('glitching');
-        }, 2000);
-    },
-
-    increaseGlitch: function(amount) {
-        // Glitch Stabilizer azaltır
-        let reducer = this.state.upgrades.glitchStabilizer.level * 0.5;
-        let finalAmount = Math.max(1, amount - reducer);
-        
-        this.state.glitchLevel += finalAmount;
-        this.ui.updateGlitch();
-        this.log(`Sistem Kararsızlığı Arttı: %${this.state.glitchLevel.toFixed(1)}`);
-
-        if (this.state.glitchLevel >= 100) {
-            this.triggerReboot();
-        }
-    },
-
-    triggerReboot: function() {
-        this.status.isRebooting = true;
-        document.getElementById('reboot-screen').classList.remove('hidden');
-        this.saveSystem.save(); // İlerlemeyi kaydet ama reboot at
-        
-        let timer = 15;
-        const el = document.getElementById('reboot-timer');
-        
-        const interval = setInterval(() => {
-            timer--;
-            el.innerText = timer;
-            if (timer <= 0) {
-                clearInterval(interval);
-                location.reload(); // Sayfayı yenile
+    mechanics: {
+        click: function() {
+            if (Game.flags.isRebooting) return;
+            
+            // CEZALAR
+            if (Game.flags.isTracing) {
+                Game.mechanics.addStrike();
+                return;
             }
-        }, 1000);
-    },
+            if (Game.flags.isGlitching) {
+                Game.mechanics.increaseGlitch(10);
+            }
 
-    gameOver: function() {
-        document.getElementById('game-over-screen').classList.remove('hidden');
-        this.status.isRebooting = true; // Oyunu dondur
-        localStorage.removeItem('neonHackerSave'); // Save'i sil
+            // KAZANÇ
+            const power = Game.state.upgrades.clickPower.lvl * 1.5;
+            Game.state.hp += power;
+            
+            const infilSpeed = 1 + (Game.state.upgrades.clickPower.lvl * 0.2); // Sızma hızı upgrade'e bağlı
+            Game.state.infiltration += infilSpeed;
+
+            if (Game.state.infiltration >= 100) {
+                Game.state.infiltration = 0;
+                Game.mechanics.loot();
+            }
+
+            // RASTGELE OLAY TETİKLEME
+            Game.mechanics.checkEvents();
+            Game.ui.renderFrame(); // UI Update
+        },
+
+        loot: function() {
+            const item = DATA_TYPES[Math.floor(Math.random() * DATA_TYPES.length)];
+            Game.state.inventory.push(item);
+            Game.ui.log(`Veri Çekildi: [${item.rarity}] ${item.name}`);
+            Game.ui.updateInventory();
+        },
+
+        checkEvents: function() {
+            const riskMitigation = Game.state.upgrades.riskReducer.lvl * 0.2;
+            
+            // Trace Check
+            if (!Game.flags.isTracing && Math.random() < (CONFIG.baseTraceChance / (1 + riskMitigation))) {
+                Game.mechanics.startTrace();
+            }
+            // Glitch Check
+            if (!Game.flags.isGlitching && Math.random() < (CONFIG.baseGlitchChance / (1 + riskMitigation))) {
+                Game.mechanics.startGlitch();
+            }
+        },
+
+        startTrace: function() {
+            Game.flags.isTracing = true;
+            document.getElementById('trace-overlay').classList.remove('hidden');
+            Game.ui.log("UYARI: SISTEM IZLENIYOR!");
+            
+            setTimeout(() => {
+                Game.flags.isTracing = false;
+                document.getElementById('trace-overlay').classList.add('hidden');
+                Game.ui.log("Tehdit geçti.");
+            }, CONFIG.eyeDuration);
+        },
+
+        addStrike: function() {
+            Game.state.strikes++;
+            Game.ui.log("!!! TESPİT EDİLDİN: STRIKE +1 !!!");
+            if (Game.state.strikes >= 10) {
+                alert("GAME OVER - POLİSLER KAPIDA");
+                Game.saveSystem.resetSave();
+            }
+            Game.ui.updateHeader();
+        },
+
+        startGlitch: function() {
+            Game.flags.isGlitching = true;
+            document.body.classList.add('glitch-active');
+            Game.ui.log("SİSTEM HATASI: GLITCH TESPİT EDİLDİ");
+            
+            setTimeout(() => {
+                if(!Game.flags.isRebooting) {
+                    Game.flags.isGlitching = false;
+                    document.body.classList.remove('glitch-active');
+                }
+            }, 3000);
+        },
+
+        increaseGlitch: function(amount) {
+            const stab = Game.state.upgrades.glitchStab.lvl * 0.5;
+            Game.state.glitchLevel += Math.max(1, amount - stab);
+            Game.ui.updateHeader();
+
+            if (Game.state.glitchLevel >= 100) {
+                Game.mechanics.triggerReboot();
+            }
+        },
+
+        triggerReboot: function() {
+            Game.flags.isRebooting = true;
+            Game.saveSystem.save();
+            document.getElementById('reboot-overlay').classList.remove('hidden');
+            
+            let timer = 15;
+            const el = document.getElementById('reboot-timer');
+            const int = setInterval(() => {
+                timer--;
+                el.innerText = timer;
+                if(timer <= 0) {
+                    clearInterval(int);
+                    location.reload();
+                }
+            }, 1000);
+        }
     },
 
     // --- MARKET & EKONOMİ ---
     market: {
-        sellAll: function(vendorType) {
-            if (game.state.inventory.length === 0) {
-                game.log("Satılacak veri yok.");
+        sellAll: function(vendor) {
+            if(Game.state.inventory.length === 0) return;
+
+            let multi = 1;
+            let risk = 0;
+
+            switch(vendor) {
+                case 'p2p': multi = 0.8; risk = 0; break;
+                case 'broker': multi = 1.0; risk = 0.1; break;
+                case 'crypto': multi = 1.4; risk = 0.3; break;
+                case 'darknet': multi = 2.0; risk = 0.6; break;
+            }
+
+            if(Math.random() < risk) {
+                Game.mechanics.addStrike();
+                Game.ui.log("SATIŞTA YAKALANDIN!");
                 return;
             }
 
-            let multiplier = 1;
-            let risk = 0;
-
-            switch(vendorType) {
-                case 'p2p': multiplier = 0.8; risk = 0; break;
-                case 'broker': multiplier = 1.0; risk = 0.1; break;
-                case 'darkweb': multiplier = 1.5; risk = 0.4; break;
-                case 'syndicate': multiplier = 2.0; risk = 0.8; break; // Çok riskli
-            }
-
-            // Risk kontrolü (Trace veya Glitch tetikler)
-            if (Math.random() < risk) {
-                game.log("Satış sırasında sorun çıktı!");
-                game.increaseGlitch(20);
-                game.startTrace();
-            }
-
-            let totalVal = 0;
-            game.state.inventory.forEach(item => {
-                totalVal += item.basePrice * multiplier;
-            });
-
-            game.state.inventory = []; // Envanteri boşalt
-            game.state.money += totalVal;
-            game.ui.updateMoney();
-            game.ui.updateInventory();
-            game.log(`Tüm veriler satıldı. Kazanç: ${totalVal.toFixed(2)} ₺`);
+            let total = 0;
+            Game.state.inventory.forEach(i => total += i.val * multi);
+            Game.state.inventory = [];
+            Game.state.money += total;
+            
+            Game.ui.log(`Satış Başarılı: +${total.toFixed(2)} TL`);
+            Game.ui.updateInventory();
+            Game.ui.updateHeader();
         }
     },
 
     bank: {
         updateRates: function() {
-            // Rastgele dalgalanma (+-%5)
-            for (let curr of CURRENCIES) {
-                let change = 1 + (Math.random() * 0.1 - 0.05);
-                game.state.rates[curr] *= change;
+            for(let key in Game.state.rates) {
+                const change = 1 + (Math.random() * 0.1 - 0.05);
+                Game.state.rates[key] *= change;
             }
-            game.ui.updateBank();
+            Game.ui.updateBank();
         },
-        buyCurrency: function() {
-            let amountTRY = parseFloat(document.getElementById('exchange-amount').value);
-            let currency = document.getElementById('currency-select').value;
-            let rate = game.state.rates[currency];
+        buy: function() {
+            const amount = parseFloat(document.getElementById('exchange-amount').value);
+            const type = document.getElementById('currency-select').value;
+            const rate = Game.state.rates[type];
 
-            if (!amountTRY || amountTRY <= 0) return;
-            if (game.state.money >= amountTRY) {
-                game.state.money -= amountTRY;
-                game.state.currencies[currency] += amountTRY / rate;
-                game.ui.updateMoney();
-                game.ui.updateBank();
-                game.log(`${amountTRY} ₺ karşılığı ${currency} alındı.`);
-            } else {
-                game.log("Yetersiz bakiye.");
+            if(amount > 0 && Game.state.money >= amount) {
+                Game.state.money -= amount;
+                Game.state.currencies[type] += amount / rate;
+                Game.ui.updateHeader();
+                Game.ui.updateBank();
             }
         },
-        sellCurrency: function() {
-            let currency = document.getElementById('currency-select').value;
-            let amountCurr = game.state.currencies[currency];
-            let rate = game.state.rates[currency];
+        sell: function() {
+            const type = document.getElementById('currency-select').value;
+            const holding = Game.state.currencies[type];
+            const rate = Game.state.rates[type];
 
-            if (amountCurr <= 0) { game.log("Döviz bakiyesi yok."); return; }
-
-            let gainTRY = amountCurr * rate;
-            game.state.currencies[currency] = 0;
-            game.state.money += gainTRY;
-            game.ui.updateMoney();
-            game.ui.updateBank();
-            game.log(`${currency} bozduruldu. Kazanç: ${gainTRY.toFixed(2)} ₺`);
-        }
-    },
-
-    // --- YÜKSELTMELER ---
-    buyUpgrade: function(key) {
-        let upg = this.state.upgrades[key];
-        // Hack Puanı ile mi Para ile mi? Prompt'ta belirtilmemiş, Hack Puanı kullanalım.
-        // Ama "fiyat" dediği için Para da olabilir. Hibrit yapalım: Hack Puanı.
-        
-        // Bu örnekte Hack Puanı kullanıyoruz.
-        if (this.state.hp >= upg.cost) {
-            this.state.hp -= upg.cost;
-            upg.level++;
-            upg.cost = Math.floor(upg.cost * 1.5);
-            this.ui.updateUpgrades();
-            this.ui.updateHP();
-            this.log(`${upg.name} yükseltildi. Yeni Seviye: ${upg.level}`);
-        } else {
-            this.log("Yetersiz Hack Puanı!");
+            if(holding > 0) {
+                Game.state.money += holding * rate;
+                Game.state.currencies[type] = 0;
+                Game.ui.updateHeader();
+                Game.ui.updateBank();
+            }
         }
     },
 
     // --- UI YÖNETİMİ ---
     ui: {
+        initListeners: function() {
+            // Tab Geçişleri
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                    document.querySelectorAll('.nav-btn').forEach(nb => nb.classList.remove('active'));
+                    document.getElementById(e.target.dataset.tab).classList.add('active');
+                    e.target.classList.add('active');
+                });
+            });
+
+            // Hack Butonu
+            document.getElementById('hack-btn').addEventListener('click', Game.mechanics.click);
+
+            // Göz Takibi (Optimization: Throttle yapmadan doğrudan transform güncellemesi)
+            document.addEventListener('mousemove', (e) => {
+                if(!Game.flags.isTracing) return;
+                const eye = document.querySelector('.eye-ball');
+                const socket = document.querySelector('.eye-socket');
+                const rect = socket.getBoundingClientRect();
+                
+                const eyeX = rect.left + rect.width / 2;
+                const eyeY = rect.top + rect.height / 2;
+                const angle = Math.atan2(e.clientY - eyeY, e.clientX - eyeX);
+                const dist = Math.min(30, Math.hypot(e.clientX - eyeX, e.clientY - eyeY) / 5); // Limit movement
+                
+                eye.style.transform = `translate(${Math.cos(angle) * dist}px, ${Math.sin(angle) * dist}px)`;
+            });
+        },
+
         updateAll: function() {
-            this.updateHP();
-            this.updateMoney();
-            this.updateStrikes();
-            this.updateGlitch();
-            this.updateInfiltration();
+            this.updateHeader();
+            this.renderFrame(); // Barlar
             this.updateInventory();
             this.updateBank();
             this.updateUpgrades();
         },
-        updateHP: () => document.getElementById('hp-display').innerText = Math.floor(game.state.hp),
-        updateMoney: () => document.getElementById('money-display').innerText = game.state.money.toFixed(2),
-        updateStrikes: () => document.getElementById('strike-display').innerText = game.state.strikes,
-        updateGlitch: () => document.getElementById('glitch-display').innerText = game.state.glitchLevel.toFixed(1),
-        updateInfiltration: () => {
-            let val = Math.floor(game.state.infiltration);
-            document.getElementById('infiltration-bar').style.width = val + '%';
-            document.getElementById('infiltration-text').innerText = '%' + val;
+
+        renderFrame: function() {
+            // Sadece hızlı değişenleri update et (RAF içinde çağrılabilir)
+            document.getElementById('hp-display').innerText = Math.floor(Game.state.hp);
+            document.getElementById('infiltration-bar').style.width = Math.min(100, Game.state.infiltration) + "%";
+            document.getElementById('infiltration-text').innerText = '%' + Math.floor(Game.state.infiltration);
         },
-        updateInventory: () => {
+
+        updateHeader: function() {
+            document.getElementById('money-display').innerText = Game.state.money.toFixed(2);
+            document.getElementById('strike-display').innerText = Game.state.strikes;
+            document.getElementById('glitch-display').innerText = Game.state.glitchLevel.toFixed(1);
+        },
+
+        updateInventory: function() {
             const list = document.getElementById('inventory-list');
             list.innerHTML = "";
-            game.state.inventory.forEach(item => {
-                let div = document.createElement('div');
+            Game.state.inventory.forEach(item => {
+                const div = document.createElement('div');
                 div.className = 'card';
-                div.innerHTML = `<h4>${item.name}</h4><div class="rarity">${item.rarity}</div>`;
+                div.innerHTML = `<div>${item.name}</div><small>${item.rarity}</small>`;
                 list.appendChild(div);
             });
         },
-        updateBank: () => {
+
+        updateBank: function() {
             const list = document.getElementById('currency-list');
             list.innerHTML = "";
-            
-            // Mevcut Varlıklar
-            for (let c of CURRENCIES) {
-                let div = document.createElement('div');
+            for(let key in Game.state.currencies) {
+                const div = document.createElement('div');
                 div.className = 'card';
-                div.innerHTML = `<h4>${c}</h4>
-                                 <p>Kur: ${game.state.rates[c].toFixed(2)} ₺</p>
-                                 <p>Cüzdan: ${game.state.currencies[c].toFixed(4)}</p>`;
+                div.innerHTML = `<b>${key}</b><br>Kur: ${Game.state.rates[key].toFixed(2)}<br>Sahip: ${Game.state.currencies[key].toFixed(4)}`;
                 list.appendChild(div);
             }
         },
-        updateUpgrades: () => {
+        
+        updateUpgrades: function() {
             const list = document.getElementById('upgrade-list');
             list.innerHTML = "";
-            for (let key in game.state.upgrades) {
-                let u = game.state.upgrades[key];
-                let div = document.createElement('div');
-                div.className = 'card upgrade-item';
-                div.innerHTML = `<h4>${u.name} (Lvl ${u.level})</h4>
-                                 <p>Maliyet: ${u.cost} HP</p>
-                                 <button onclick="game.buyUpgrade('${key}')">SATIN AL</button>`;
+            for(let key in Game.state.upgrades) {
+                const u = Game.state.upgrades[key];
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `<b>${u.name}</b> (Lvl ${u.lvl})<br>Maliyet: ${u.cost} HP`;
+                div.onclick = () => {
+                    if(Game.state.hp >= u.cost) {
+                        Game.state.hp -= u.cost;
+                        u.lvl++;
+                        u.cost = Math.floor(u.cost * 1.5);
+                        Game.ui.updateAll();
+                    }
+                };
                 list.appendChild(div);
+            }
+        },
+
+        log: function(msg) {
+            const ul = document.getElementById('log-list');
+            const li = document.createElement('li');
+            li.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            ul.prepend(li);
+            if(ul.children.length > 20) ul.lastChild.remove();
+        },
+
+        // --- TEMA SİSTEMİ ---
+        openThemeModal: function() {
+            document.getElementById('theme-modal').classList.remove('hidden');
+            const list = document.getElementById('theme-list');
+            list.innerHTML = "";
+            Game.state.themes.forEach(theme => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.style.borderColor = theme.color;
+                div.innerHTML = `<h4 style="color:${theme.color}">${theme.name}</h4>
+                                 <p>${theme.purchased ? "SATIN ALINDI" : theme.cost + " TL"}</p>`;
+                div.onclick = () => {
+                    if(theme.purchased) {
+                        Game.ui.applyTheme(theme.id);
+                    } else if(Game.state.money >= theme.cost) {
+                        Game.state.money -= theme.cost;
+                        theme.purchased = true;
+                        Game.ui.applyTheme(theme.id);
+                        Game.ui.updateHeader();
+                        Game.ui.openThemeModal(); // Refresh UI
+                    } else {
+                        alert("Yetersiz Bakiye!");
+                    }
+                };
+                list.appendChild(div);
+            });
+        },
+
+        closeThemeModal: () => document.getElementById('theme-modal').classList.add('hidden'),
+
+        applyTheme: function(themeId) {
+            const theme = Game.state.themes.find(t => t.id === themeId);
+            if(theme) {
+                document.documentElement.style.setProperty('--primary', theme.color);
+                Game.state.currentTheme = themeId;
             }
         }
     },
@@ -360,35 +425,42 @@ const game = {
     // --- DÖNGÜLER ---
     loops: {
         start: function() {
-            // Auto Clicker (1sn)
+            // UI Loop (60 FPS için optimize)
+            const loop = () => {
+                Game.ui.renderFrame();
+                requestAnimationFrame(loop);
+            };
+            requestAnimationFrame(loop);
+
+            // Auto Clicker
             setInterval(() => {
-                if (game.state.upgrades.autoClicker.level > 0 && !game.status.isRebooting) {
-                    game.state.hp += game.state.upgrades.autoClicker.level * 2;
-                    game.ui.updateHP();
+                if(!Game.flags.isRebooting && Game.state.upgrades.autoClick.lvl > 0) {
+                    Game.state.hp += Game.state.upgrades.autoClick.lvl;
                 }
             }, 1000);
 
-            // Döviz Kuru (10sn)
+            // Döviz ve Timer
             setInterval(() => {
-                game.bank.updateRates();
-                let t = 10;
-                let timerEl = document.getElementById('currency-timer');
-                let downCount = setInterval(()=> {
-                    t--; timerEl.innerText=t;
-                    if(t<=0) clearInterval(downCount);
-                }, 1000);
-            }, GAME_CONFIG.currencyUpdateInterval);
+                Game.bank.updateRates();
+            }, CONFIG.currencyUpdateInterval);
 
-            // Auto Save (5sn)
+            // Geri Sayım Görseli
+            let t = 10;
             setInterval(() => {
-                game.saveSystem.save();
-            }, GAME_CONFIG.autoSaveInterval);
+                t--;
+                const el = document.getElementById('currency-timer');
+                if(el) el.innerText = t;
+                if(t<=0) t=10;
+            }, 1000);
+
+            // Auto Save
+            setInterval(() => Game.saveSystem.save(), CONFIG.autoSaveInterval);
             
-            // Glitch Azaltma (Zamanla soğuma)
+            // Glitch Azaltma
             setInterval(() => {
-                if(game.state.glitchLevel > 0 && !game.status.isGlitching) {
-                    game.state.glitchLevel = Math.max(0, game.state.glitchLevel - 0.5);
-                    game.ui.updateGlitch();
+                if(Game.state.glitchLevel > 0 && !Game.flags.isGlitching) {
+                    Game.state.glitchLevel = Math.max(0, Game.state.glitchLevel - 1);
+                    Game.ui.updateHeader();
                 }
             }, 1000);
         }
@@ -397,73 +469,26 @@ const game = {
     // --- KAYIT SİSTEMİ ---
     saveSystem: {
         save: function() {
-            if(game.state.strikes >= 10) return; // Game over ise kaydetme
-            localStorage.setItem('neonHackerSave', JSON.stringify(game.state));
-            console.log("Oyun Kaydedildi.");
+            if(Game.state.strikes >= 10) return;
+            localStorage.setItem('neonBreachSave', JSON.stringify(Game.state));
+            console.log("Game Saved");
         },
-        clearSave: function() {
-            localStorage.removeItem('neonHackerSave');
-            location.reload();
-        }
-    },
-
-    loadGame: function() {
-        const saved = localStorage.getItem('neonHackerSave');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                // Object merge (yeni özellikler eklendiyse bozulmasın diye)
-                game.state = { ...game.state, ...parsed };
-            } catch (e) {
-                console.error("Save dosyası bozuk", e);
+        load: function() {
+            const data = localStorage.getItem('neonBreachSave');
+            if(data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    Game.state = { ...Game.state, ...parsed };
+                } catch(e) { console.error("Save Load Error", e); }
             }
-        }
-    },
-
-    log: function(msg) {
-        const logPanel = document.getElementById('terminal-log');
-        const fullLogs = document.getElementById('full-logs');
-        
-        const time = new Date().toLocaleTimeString();
-        const p = document.createElement('p');
-        p.innerText = `> [${time}] ${msg}`;
-        
-        logPanel.prepend(p);
-        
-        // Settings panelindeki full log
-        const li = document.createElement('li');
-        li.innerText = `[${time}] ${msg}`;
-        fullLogs.prepend(li);
-
-        if (logPanel.children.length > 20) logPanel.lastChild.remove();
-    },
-
-    events: {
-        bind: function() {
-            document.getElementById('hack-btn').addEventListener('click', () => game.clickHack());
+        },
+        resetSave: function() {
+            localStorage.removeItem('neonBreachSave');
+            location.reload();
         }
     }
 };
 
-// --- YARDIMCI FONKSİYONLAR ---
-function switchTab(tabId) {
-    // Tüm içerikleri gizle
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    // Tüm butonları pasif yap
-    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-    
-    // Seçileni aç
-    document.getElementById(tabId).classList.add('active');
-    // Butonu aktif yap (event.target bulmak yerine basit loop)
-    const buttons = document.querySelectorAll('.nav-btn');
-    buttons.forEach(btn => {
-        if(btn.onclick.toString().includes(tabId)) btn.classList.add('active');
-    });
-}
-
-function hardReset() {
-    game.saveSystem.clearSave();
-}
-
-// OYUNU BAŞLAT
-window.onload = () => game.init();
+// --- INIT ---
+window.addEventListener('DOMContentLoaded', Game.system.init);
+                                                                                                       
