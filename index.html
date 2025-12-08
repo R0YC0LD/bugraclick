@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>CYBER BREACH: SYSTEM SHOCK</title>
+    <title>CYBER BREACH: SYSTEM SHOCK (STABLE)</title>
     <style>
-        /* --- CORE --- */
+        /* --- TEMEL AYARLAR --- */
         :root {
-            --bg: #050505;
-            --panel: rgba(13, 17, 23, 0.95);
+            --bg: #000000;
+            --panel: #0b0f19;
             --primary: #00f3ff;
             --danger: #ff003c;
             --warn: #ffcc00;
             --safe: #00ff88;
-            --font-ui: 'Segoe UI', system-ui, sans-serif;
+            --font-ui: 'Segoe UI', sans-serif;
             --font-mono: 'Courier New', monospace;
         }
+
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; cursor: default; }
         
         body {
@@ -23,500 +24,467 @@
             height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: center;
         }
 
-        /* Arkaplan Animasyonu */
-        .matrix-rain {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: 
-                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
-            background-size: 30px 30px;
-            animation: bgScroll 20s linear infinite;
+        /* --- EFEKTLER --- */
+        .scanlines {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px; opacity: 0.3;
         }
-        @keyframes bgScroll { from { background-position: 0 0; } to { background-position: 30px 30px; } }
 
-        /* --- SCREENS --- */
+        .bg-grid {
+            position: fixed; top: 0; left: 0; width: 200%; height: 200%; z-index: -1;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
+            animation: gridMove 20s linear infinite;
+        }
+        @keyframes gridMove { 0% { transform: perspective(500px) rotateX(60deg) translateY(0); } 100% { transform: perspective(500px) rotateX(60deg) translateY(50px); } }
+
+        /* --- EKRANLAR --- */
         .screen {
             position: absolute; inset: 0; display: none; 
-            flex-direction: column; transition: opacity 0.5s;
+            flex-direction: column; transition: opacity 0.5s; z-index: 10;
         }
-        .screen.active { display: flex; }
+        .screen.active { display: flex; opacity: 1; }
 
-        /* --- MENU (BIOS) --- */
+        /* --- BIOS MENÜSÜ --- */
         #bios-screen {
             background: #000; color: var(--primary); font-family: var(--font-mono);
-            padding: 40px; align-items: center; justify-content: center;
+            align-items: center; justify-content: center;
         }
-        .bios-logo { font-size: 3rem; font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 10px var(--primary); }
-        .bios-menu { width: 400px; border: 2px solid var(--primary); padding: 20px; }
-        .bios-item {
-            padding: 10px; cursor: pointer; border-bottom: 1px dashed #333; display: flex; justify-content: space-between;
-        }
-        .bios-item:hover { background: var(--primary); color: #000; }
         
-        /* --- GAME UI --- */
+        .bios-container { width: 600px; border: 2px solid var(--primary); padding: 30px; box-shadow: 0 0 30px var(--primary); }
+        .bios-title { font-size: 3rem; font-weight: bold; margin-bottom: 30px; text-shadow: 0 0 10px var(--primary); text-align: center; }
+        
+        .menu-btn {
+            background: transparent; border: 1px solid #333; color: #aaa; width: 100%;
+            padding: 15px; margin-bottom: 10px; cursor: pointer; text-align: left;
+            font-family: var(--font-mono); font-size: 1.1rem; transition: 0.2s;
+            display: flex; justify-content: space-between;
+        }
+        .menu-btn:hover { border-color: var(--primary); color: #fff; background: rgba(0, 243, 255, 0.1); }
+        .menu-btn.start { border-color: var(--safe); color: var(--safe); font-weight: bold; text-align: center; justify-content: center; margin-top: 20px; }
+        .menu-btn.start:hover { background: var(--safe); color: black; box-shadow: 0 0 20px var(--safe); }
+
+        /* --- OYUN ARAYÜZÜ --- */
         #game-interface {
-            display: grid; grid-template-columns: 300px 1fr 320px; gap: 10px;
-            width: 100%; height: 100%; max-width: 1920px; padding: 10px;
+            display: grid; grid-template-columns: 280px 1fr 300px; gap: 15px;
+            width: 98%; height: 95%; max-width: 1800px;
         }
 
         .panel {
-            background: var(--panel); border: 1px solid #333; border-radius: 6px;
+            background: var(--panel); border: 1px solid #333; border-radius: 4px;
             display: flex; flex-direction: column; overflow: hidden; position: relative;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
         .panel-header {
-            padding: 12px; background: rgba(255,255,255,0.03); border-bottom: 1px solid #333;
-            font-weight: bold; color: var(--primary); letter-spacing: 1px;
+            padding: 15px; background: rgba(255,255,255,0.03); border-bottom: 1px solid #333;
+            font-weight: bold; color: var(--primary); font-size: 0.9rem; letter-spacing: 1px;
             display: flex; justify-content: space-between;
         }
-        .scroll-content { overflow-y: auto; flex-grow: 1; padding: 10px; }
+        .scroll-area { overflow-y: auto; flex-grow: 1; padding: 10px; }
 
-        /* CENTER DASHBOARD */
+        /* LİSTE ELEMANLARI */
+        .list-item {
+            background: rgba(255,255,255,0.02); border: 1px solid #333; padding: 12px;
+            margin-bottom: 8px; cursor: pointer; transition: 0.2s; display: flex; align-items: center;
+        }
+        .list-item:hover { border-color: var(--primary); background: rgba(0, 243, 255, 0.05); }
+        .list-item.locked { opacity: 0.4; pointer-events: none; filter: grayscale(1); }
+        .list-item.active { border-color: var(--safe); box-shadow: inset 3px 0 0 var(--safe); }
+        
+        .item-icon { font-size: 1.5rem; width: 40px; text-align: center; margin-right: 10px; }
+        .item-details { flex-grow: 1; }
+        .item-title { font-weight: bold; font-size: 0.9rem; color: white; }
+        .item-sub { font-size: 0.75rem; color: #888; display: flex; justify-content: space-between; margin-top: 3px; }
+
+        /* ORTA PANEL (DASHBOARD) */
         .dashboard { align-items: center; justify-content: center; position: relative; }
         
-        .hud-top {
-            position: absolute; top: 0; left: 0; width: 100%; padding: 15px;
-            display: flex; justify-content: space-around; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+        .hud {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
+            display: flex; justify-content: space-between; pointer-events: none;
         }
-        .hud-stat { text-align: center; }
-        .hud-val { font-family: var(--font-mono); font-size: 1.5rem; font-weight: bold; }
-        
-        /* ACTIONS CONTAINER */
-        .action-area {
-            display: flex; gap: 40px; align-items: center; margin-top: 40px;
-        }
+        .hud-box { text-align: center; }
+        .hud-val { font-family: var(--font-mono); font-size: 1.4rem; font-weight: bold; }
 
-        /* HACK BUTTON */
+        /* AKSİYON BUTONLARI */
+        .controls { display: flex; gap: 40px; align-items: center; margin-bottom: 30px; }
+
         #hack-btn {
             width: 220px; height: 220px; border-radius: 50%;
             border: 4px solid var(--primary);
             background: radial-gradient(circle, rgba(0, 243, 255, 0.1), rgba(0,0,0,0.8));
-            box-shadow: 0 0 30px var(--primary);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            cursor: pointer; transition: 0.1s;
+            cursor: pointer; transition: 0.1s; position: relative; z-index: 5;
         }
-        #hack-btn:active { transform: scale(0.95); background: rgba(0, 243, 255, 0.2); }
-        .hack-icon { font-size: 4rem; margin-bottom: 5px; pointer-events: none; }
-        
-        /* COOLANT LEVER (New Mechanic) */
+        #hack-btn:active { transform: scale(0.95); border-color: white; box-shadow: 0 0 50px var(--primary); }
+        #hack-btn.danger { border-color: var(--danger); animation: shake 0.3s infinite; }
+
         #cool-btn {
-            width: 120px; height: 120px; border-radius: 10px;
-            border: 3px solid var(--safe);
+            width: 100px; height: 100px; border-radius: 10px;
+            border: 2px solid var(--safe);
             background: radial-gradient(circle, rgba(0, 255, 136, 0.1), rgba(0,0,0,0.8));
-            box-shadow: 0 0 20px var(--safe);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            cursor: pointer; transition: 0.1s; position: relative;
+            cursor: pointer; transition: 0.1s; box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
         }
-        #cool-btn:active { transform: translateY(5px); box-shadow: 0 0 5px var(--safe); background: var(--safe); color: black; }
-        .cool-icon { font-size: 2.5rem; pointer-events: none; }
-        .steam-particle {
-            position: absolute; width: 10px; height: 10px; background: rgba(255,255,255,0.5);
-            border-radius: 50%; animation: steamUp 1s forwards; pointer-events: none;
-        }
+        #cool-btn:active { transform: translateY(5px); background: var(--safe); color: black; }
 
-        /* BARS */
-        .bars-wrapper { width: 500px; margin-top: 40px; }
-        .bar-group { margin-bottom: 15px; }
-        .bar-label { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px; font-weight: bold; }
-        .track { height: 14px; background: #111; border: 1px solid #444; border-radius: 7px; overflow: hidden; position: relative; }
+        /* BARLAR */
+        .bars { width: 450px; }
+        .bar-wrap { margin-bottom: 15px; }
+        .bar-info { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px; font-weight: bold; }
+        .track { height: 12px; background: #000; border: 1px solid #444; border-radius: 6px; overflow: hidden; }
         .fill { height: 100%; transition: width 0.1s linear; }
-        
-        /* Risk Bar with warning stripes */
-        #risk-fill { 
-            background: repeating-linear-gradient(45deg, var(--danger), var(--danger) 10px, #aa0028 10px, #aa0028 20px); 
-        }
 
-        /* --- LIST ITEMS --- */
-        .list-card {
-            background: rgba(255,255,255,0.02); border: 1px solid #333; padding: 12px;
-            margin-bottom: 8px; cursor: pointer; transition: 0.2s; display: flex; align-items: center;
-        }
-        .list-card:hover { border-color: var(--primary); background: rgba(0, 243, 255, 0.05); }
-        .list-card.locked { opacity: 0.4; filter: grayscale(1); pointer-events: none; }
-        .list-card.active { border-color: var(--safe); box-shadow: inset 4px 0 0 var(--safe); }
-        
-        .card-icon { font-size: 1.5rem; margin-right: 15px; width: 30px; text-align: center; }
-        .card-info { flex-grow: 1; }
-        .card-title { font-weight: bold; font-size: 0.9rem; color: #fff; }
-        .card-meta { font-size: 0.75rem; color: #888; display: flex; justify-content: space-between; margin-top: 2px; }
+        #strikes-cont { margin-top: 10px; display: flex; justify-content: center; gap: 5px; }
+        .strike { width: 10px; height: 10px; background: #333; border-radius: 50%; border: 1px solid #555; }
+        .strike.on { background: var(--danger); box-shadow: 0 0 5px var(--danger); border-color: #fff; }
 
-        /* --- OVERLAYS --- */
-        #boot-overlay {
+        /* BOOT EKRANI */
+        #boot-screen {
             position: fixed; inset: 0; background: #000; z-index: 9999;
-            display: none; font-family: 'Consolas', monospace; color: #ccc;
-            padding: 20px; flex-direction: column; justify-content: flex-start;
+            display: none; padding: 20px; font-family: 'Consolas', monospace; color: #ccc;
+            flex-direction: column; justify-content: flex-start;
         }
-        .boot-line { margin-bottom: 5px; }
+        .boot-line { margin-bottom: 2px; }
 
-        #alert-overlay {
+        /* ALARM EFEKTİ */
+        #alert-layer {
             position: absolute; inset: 0; pointer-events: none; z-index: 50;
-            background: radial-gradient(circle, transparent 50%, rgba(255,0,60,0.5) 100%);
-            opacity: 0; transition: opacity 0.5s;
+            background: radial-gradient(circle, transparent 60%, rgba(255,0,0,0.4) 100%);
+            opacity: 0; transition: opacity 0.3s;
         }
 
-        /* --- ANIMATIONS --- */
-        @keyframes steamUp { 0% { opacity:0.8; transform: translateY(0) scale(1); } 100% { opacity:0; transform: translateY(-50px) scale(3); } }
+        /* ANIMASYONLAR */
         @keyframes shake { 0% { transform: translate(1px, 1px) } 25% { transform: translate(-2px, -2px) } 75% { transform: translate(-1px, 2px) } }
         
-        /* Mobile */
-        @media (max-width: 1000px) {
-            #game-interface { grid-template-columns: 1fr; display: flex; flex-direction: column; overflow-y: auto; }
-            .action-area { flex-direction: column; gap: 20px; }
-            .bars-wrapper { width: 90%; }
+        .particle {
+            position: absolute; pointer-events: none; animation: floatUp 1s forwards;
+            font-weight: bold; font-size: 1.2rem; z-index: 99; text-shadow: 0 0 5px black;
+        }
+        @keyframes floatUp { 0% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(-60px); } }
+
+        @media (max-width: 900px) {
+            #game-interface { grid-template-columns: 1fr; display: block; overflow-y: auto; }
+            .panel { margin-bottom: 20px; height: auto; min-height: 300px; }
+            .controls { flex-direction: column; gap: 20px; }
+            .bars { width: 90%; }
         }
     </style>
 </head>
 <body>
 
-    <div class="matrix-rain"></div>
+    <div class="bg-grid"></div>
+    <div class="scanlines"></div>
 
     <div id="bios-screen" class="screen active">
-        <div class="bios-logo">SYSTEM_BIOS v8.0</div>
-        <div class="bios-menu">
-            <div class="bios-item" onclick="game.startRun()">
-                <span>> SİSTEMİ BAŞLAT</span>
-                <span>[ENTER]</span>
+        <div class="bios-container">
+            <div class="bios-title">SYSTEM_SHOCK BIOS</div>
+            <div style="text-align: center; margin-bottom: 20px; color: var(--warn); font-family: var(--font-mono);">
+                LEGACY POINT (LP): <span id="lp-display">0</span>
             </div>
-            <div class="bios-item">
-                <span>> MİRAS PUANI (LP)</span>
-                <span id="bios-lp">0</span>
-            </div>
-            <div style="margin-top: 20px; font-size: 0.8rem; color: #666;">
-                DİKKAT: 10 ÇÖKME DURUMUNDA VERİLER SİLİNİR.
-            </div>
+            
+            <div id="perma-shop">
+                </div>
+
+            <button class="menu-btn start" onclick="game.startRun()">BAĞLANTIYI BAŞLAT</button>
         </div>
     </div>
 
-    <div id="boot-overlay"></div>
+    <div id="boot-screen"></div>
 
     <div id="game-interface" class="screen">
-        <div id="alert-overlay"></div>
+        <div id="alert-layer"></div>
 
         <div class="panel">
             <div class="panel-header">
-                <span>HEDEFLER</span>
-                <span style="color:var(--safe)">LVL <span id="lvl-display">1</span></span>
+                <span>HEDEF SİSTEMLER</span>
+                <span style="color:var(--safe)">SEVİYE <span id="run-lvl">1</span></span>
             </div>
-            <div class="scroll-content" id="target-list"></div>
-            <div style="padding: 10px; border-top: 1px solid #333; font-size: 0.7rem; color: #555;">
-                > Bağlantı durumu: STABİL
-            </div>
+            <div class="scroll-area" id="target-list"></div>
         </div>
 
         <div class="panel dashboard">
-            <div class="hud-top">
-                <div class="hud-stat">
+            <div class="hud">
+                <div class="hud-box">
                     <div style="font-size:0.8rem; color:#888;">ZAMAN ÇARPANI</div>
                     <div class="hud-val" style="color:var(--primary);">x<span id="multi-display">1.0</span></div>
                 </div>
-                <div class="hud-stat">
+                <div class="hud-box">
                     <div style="font-size:0.8rem; color:#888;">KRİPTO VARLIK</div>
                     <div class="hud-val" style="color:var(--warn);"><span id="money-display">0</span> ₿</div>
                 </div>
             </div>
 
-            <div class="action-area">
+            <div class="controls">
                 <div id="hack-btn" onmousedown="game.actionHack(event)">
-                    <div class="hack-icon">☠</div>
-                    <div style="letter-spacing:2px; font-weight:bold;">SALDIR</div>
+                    <div style="font-size:3rem; pointer-events:none;">☠</div>
+                    <div style="font-weight:bold; letter-spacing:2px; pointer-events:none;">SALDIR</div>
                 </div>
-
+                
                 <div id="cool-btn" onmousedown="game.actionCool(event)">
-                    <div class="cool-icon">❄️</div>
-                    <div style="font-size:0.7rem; font-weight:bold; margin-top:5px;">SOĞUT</div>
+                    <div style="font-size:2rem; pointer-events:none;">❄️</div>
+                    <div style="font-size:0.7rem; font-weight:bold; margin-top:5px; pointer-events:none;">MANUEL<br>SOĞUTMA</div>
                 </div>
             </div>
 
-            <div class="bars-wrapper">
-                <div class="bar-group">
-                    <div class="bar-label">
-                        <span style="color:var(--primary)">VERİ SIZINTISI</span>
-                        <span id="breach-txt">0%</span>
-                    </div>
+            <div class="bars">
+                <div class="bar-wrap">
+                    <div class="bar-info"><span style="color:var(--primary)">VERİ SIZINTISI</span><span id="breach-txt">0%</span></div>
                     <div class="track"><div id="breach-bar" class="fill" style="background:var(--primary); box-shadow:0 0 10px var(--primary);"></div></div>
                 </div>
-
-                <div class="bar-group">
-                    <div class="bar-label">
-                        <span style="color:var(--danger)">SİSTEM ISISI / RİSK</span>
-                        <span id="risk-txt">0%</span>
-                    </div>
-                    <div class="track"><div id="risk-bar" class="fill"></div></div>
+                <div class="bar-wrap">
+                    <div class="bar-info"><span style="color:var(--danger)">SİSTEM ISISI (RİSK)</span><span id="risk-txt">0%</span></div>
+                    <div class="track"><div id="risk-bar" class="fill" style="background:var(--danger);"></div></div>
                 </div>
-
-                <div class="bar-group" style="opacity: 0.7;">
-                    <div class="bar-label"><span>SEVİYE İLERLEMESİ</span></div>
-                    <div class="track" style="height:4px;"><div id="xp-bar" class="fill" style="background:var(--safe);"></div></div>
-                </div>
-
-                <div style="text-align:center; font-size:0.8rem; margin-top:10px;">
-                    SİSTEM HAKLARI: <span id="strikes-display" style="color:var(--danger)">10</span> / 10
-                </div>
+                
+                <div style="text-align:center; font-size:0.8rem; color:#888; margin-top:10px;">KALAN HAKLAR (STRIKES)</div>
+                <div id="strikes-cont"></div>
             </div>
         </div>
 
         <div class="panel">
             <div class="panel-header">
                 <span>KARABORSA</span>
-                <span id="passive-display" style="font-size:0.8rem; color:#888;">0/sn</span>
+                <span id="passive-display" style="font-size:0.8rem; color:#aaa;">0/sn</span>
             </div>
-            <div class="scroll-content" id="shop-list"></div>
+            <div class="scroll-area" id="shop-list"></div>
         </div>
-
     </div>
 
     <script>
-        /* --- SES MOTORU (ADVANCED SYNTH) --- */
-        const AudioSys = {
-            ctx: new (window.AudioContext || window.webkitAudioContext)(),
-            
-            playTone(freq, type, dur, vol=0.1, slide=0) {
+        /* --- SES SİSTEMİ --- */
+        const audio = {
+            ctx: null,
+            init() {
+                if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
                 if(this.ctx.state === 'suspended') this.ctx.resume();
+            },
+            play(freq, type, dur, vol=0.1, slide=0) {
+                if(!this.ctx) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = type;
                 osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
                 if(slide) osc.frequency.linearRampToValueAtTime(freq+slide, this.ctx.currentTime+dur);
-                
                 gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + dur);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime+dur);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime+dur);
             },
-
-            // WINDOWS-LIKE STARTUP SOUND (Chord)
-            playBoot() {
-                const now = this.ctx.currentTime;
-                const notes = [261.63, 329.63, 392.00, 523.25]; // C Major
-                notes.forEach((freq, i) => {
-                    setTimeout(() => {
-                        this.playTone(freq, 'sine', 2.0, 0.1);
-                        this.playTone(freq/2, 'triangle', 2.0, 0.05);
-                    }, i * 150);
-                });
+            bootSound() {
+                if(!this.ctx) return;
+                [261, 329, 392, 523].forEach((f, i) => setTimeout(() => this.play(f, 'sine', 1.5, 0.1), i*150));
             },
-
-            sfx(type) {
-                switch(type) {
-                    case 'click': this.playTone(800 + Math.random()*200, 'triangle', 0.1, 0.05); break;
-                    case 'cool': 
-                        // White noise burst for steam
-                        const bSize = this.ctx.sampleRate * 0.3;
-                        const buf = this.ctx.createBuffer(1, bSize, this.ctx.sampleRate);
-                        const data = buf.getChannelData(0);
-                        for(let i=0; i<bSize; i++) data[i] = Math.random() * 2 - 1;
-                        const src = this.ctx.createBufferSource();
-                        const g = this.ctx.createGain();
-                        src.buffer = buf;
-                        g.gain.setValueAtTime(0.1, this.ctx.currentTime);
-                        g.gain.linearRampToValueAtTime(0, this.ctx.currentTime+0.3);
-                        src.connect(g); g.connect(this.ctx.destination);
-                        src.start();
-                        break;
-                    case 'money': this.playTone(1200, 'square', 0.15, 0.05); break;
-                    case 'error': this.playTone(150, 'sawtooth', 0.4, 0.2, -50); break;
-                    case 'warning': this.playTone(800, 'sine', 0.1, 0.05, -200); break;
+            sfx(name) {
+                if(!this.ctx) return;
+                if(name==='click') this.play(600+Math.random()*200, 'triangle', 0.1);
+                if(name==='cool') { // Noise burst
+                    const b = this.ctx.createBuffer(1, this.ctx.sampleRate*0.2, this.ctx.sampleRate);
+                    const d = b.getChannelData(0);
+                    for(let i=0; i<d.length; i++) d[i] = Math.random()*2-1;
+                    const s = this.ctx.createBufferSource(); s.buffer=b;
+                    const g = this.ctx.createGain(); g.gain.value=0.15;
+                    s.connect(g); g.connect(this.ctx.destination); s.start();
                 }
+                if(name==='money') this.play(1200, 'square', 0.2, 0.05);
+                if(name==='error') this.play(100, 'sawtooth', 0.5, 0.2, -50);
             }
         };
 
-        /* --- DATA --- */
+        /* --- VERİLER --- */
         const TARGETS = [
-            { id: 0, name: "Yerel Ağ", hp: 100, sec: 1.0, reward: 50, req: 1, icon: "🏠" },
-            { id: 1, name: "Kahve Dükkanı", hp: 300, sec: 1.5, reward: 150, req: 2, icon: "☕" },
-            { id: 2, name: "ATM Terminali", hp: 800, sec: 2.2, reward: 400, req: 3, icon: "🏧" },
-            { id: 3, name: "Trafik Işıkları", hp: 2000, sec: 3.0, reward: 1200, req: 5, icon: "🚦" },
-            { id: 4, name: "Kurumsal Bulut", hp: 5000, sec: 4.5, reward: 3500, req: 8, icon: "☁️" },
-            { id: 5, name: "Uydu Ağı", hp: 15000, sec: 7.0, reward: 10000, req: 12, icon: "🛰️" },
-            { id: 6, name: "AI Çekirdeği", hp: 50000, sec: 10.0, reward: 50000, req: 15, icon: "🧠" }
+            { id: 0, name: "Ev Ağı", hp: 100, sec: 1.0, reward: 50, req: 1, icon: "🏠" },
+            { id: 1, name: "Kafe Wi-Fi", hp: 400, sec: 1.5, reward: 150, req: 2, icon: "☕" },
+            { id: 2, name: "ATM", hp: 1000, sec: 2.0, reward: 400, req: 3, icon: "🏧" },
+            { id: 3, name: "Trafik Sistemi", hp: 3000, sec: 3.0, reward: 1200, req: 5, icon: "🚦" },
+            { id: 4, name: "Şirket Sunucusu", hp: 8000, sec: 4.5, reward: 3000, req: 8, icon: "🏢" },
+            { id: 5, name: "Banka Kasası", hp: 20000, sec: 7.0, reward: 10000, req: 12, icon: "💰" },
+            { id: 6, name: "Askeri Uydu", hp: 50000, sec: 10.0, reward: 30000, req: 15, icon: "🛰️" }
         ];
 
         const UPGRADES = [
             { id: 'cpu', name: 'CPU Overclock', desc: 'Tıklama Gücü', base: 50, mult: 1.5, icon: '⚡' },
-            { id: 'bot', name: 'Botnet Node', desc: 'Oto Hack (+Risk)', base: 250, mult: 1.4, icon: '🤖' },
-            { id: 'cool', name: 'Sıvı Soğutma', desc: 'Soğutma Gücü', base: 200, mult: 1.5, icon: '❄️' },
-            { id: 'mine', name: 'Kripto Rig', desc: 'Pasif Gelir', base: 600, mult: 1.4, icon: '⛏️' }
+            { id: 'bot', name: 'Botnet Node', desc: 'Oto Hack (+Risk)', base: 200, mult: 1.4, icon: '🤖' },
+            { id: 'cool', name: 'Sıvı Soğutma', desc: 'Soğutma Gücü', base: 150, mult: 1.5, icon: '❄️' },
+            { id: 'mine', name: 'Kripto Rig', desc: 'Pasif Gelir', base: 500, mult: 1.4, icon: '⛏️' }
         ];
 
-        /* --- GAME ENGINE --- */
+        const PERMA_UPGRADES = [
+            { id: 'p_money', name: 'Başlangıç Parası (+500)', cost: 1000, type: 'money', val: 500 },
+            { id: 'p_bot', name: 'Başlangıç Botu (Lvl 1)', cost: 2500, type: 'bot', val: 1 },
+            { id: 'p_click', name: 'Güçlü Tıklama (+5)', cost: 2000, type: 'click', val: 5 }
+        ];
+
+        /* --- OYUN MOTORU --- */
         const game = {
-            meta: { lp: 0 },
+            meta: { lp: 0, unlocks: [] },
             run: {
                 active: false,
-                money: 0,
-                xp: 0,
-                lvl: 1,
-                targetId: 0,
-                breach: 0,
-                risk: 0,
-                strikes: 10,
-                multiplier: 1.0,
-                stats: { click: 2, auto: 0, coolPower: 15, passive: 0 },
+                money: 0, xp: 0, lvl: 1, targetId: 0,
+                breach: 0, risk: 0, strikes: 10, multiplier: 1.0,
+                stats: { click: 5, auto: 0, cool: 10, passive: 0 },
                 upgrades: { cpu:0, bot:0, cool:0, mine:0 }
             },
-            timers: [],
+            intervals: [],
 
-            // --- INITIALIZATION ---
             init() {
-                const saved = localStorage.getItem('cyber_shock_save');
-                if(saved) this.meta = JSON.parse(saved);
-                document.getElementById('bios-lp').innerText = this.meta.lp;
+                const s = localStorage.getItem('cyber_shock_v8');
+                if(s) this.meta = JSON.parse(s);
+                this.renderMetaShop();
             },
 
-            startRun() {
-                // Boot Sequence UI
-                document.getElementById('bios-screen').classList.remove('active');
-                this.triggerBoot(() => {
-                    this.run = {
-                        active: true, money: 0, xp: 0, lvl: 1, targetId: 0, breach: 0, risk: 0, strikes: 10, multiplier: 1.0,
-                        stats: { click: 5, auto: 0, coolPower: 20, passive: 0 },
-                        upgrades: { cpu:0, bot:0, cool:0, mine:0 }
-                    };
-                    this.ui.renderTargets();
-                    this.ui.renderShop();
-                    this.ui.updateGlobal();
-                    
-                    document.getElementById('game-interface').classList.add('active');
-                    
-                    // Start Loops
-                    this.timers.push(setInterval(() => this.loop(), 1000/60)); // 60 FPS Logic
-                    this.timers.push(setInterval(() => this.increaseMulti(), 10000)); // Time Multiplier
+            saveMeta() {
+                localStorage.setItem('cyber_shock_v8', JSON.stringify(this.meta));
+                this.renderMetaShop();
+            },
+
+            renderMetaShop() {
+                document.getElementById('lp-display').innerText = this.meta.lp;
+                const list = document.getElementById('perma-shop');
+                list.innerHTML = "";
+                PERMA_UPGRADES.forEach(p => {
+                    const owned = this.meta.unlocks.includes(p.id);
+                    list.innerHTML += `
+                        <button class="menu-btn" onclick="game.buyPerma('${p.id}', ${p.cost})" ${owned?'disabled style="opacity:0.5"':''}>
+                            <span>${p.name}</span>
+                            <span>${owned ? 'ALINDI' : p.cost + ' LP'}</span>
+                        </button>
+                    `;
                 });
             },
 
-            // --- BOOT EFFECT ---
-            triggerBoot(callback) {
-                const overlay = document.getElementById('boot-overlay');
-                overlay.style.display = 'flex';
-                overlay.innerHTML = '';
-                const lines = [
-                    "BIOS DATE 12/08/2077 14:22:55 VER 8.0",
-                    "CPU: QUANTUM CORE i9 - 128 CORES",
-                    "RAM: 256 TB CHECKING... OK",
-                    "LOADING OS...",
-                    "SYSTEM READY."
-                ];
+            buyPerma(id, cost) {
+                if(this.meta.lp >= cost && !this.meta.unlocks.includes(id)) {
+                    this.meta.lp -= cost;
+                    this.meta.unlocks.push(id);
+                    this.saveMeta();
+                }
+            },
+
+            startRun() {
+                audio.init();
+                // Varsayılan Run Değerleri
+                this.run = {
+                    active: false, // Boot bitene kadar false
+                    money: 0, xp: 0, lvl: 1, targetId: 0,
+                    breach: 0, risk: 0, strikes: 10, multiplier: 1.0,
+                    stats: { click: 5, auto: 0, cool: 15, passive: 0 }, // Baz değerler
+                    upgrades: { cpu:0, bot:0, cool:0, mine:0 }
+                };
+
+                // Perma Bonusları Uygula
+                if(this.meta.unlocks.includes('p_money')) this.run.money += 500;
+                if(this.meta.unlocks.includes('p_bot')) { this.run.stats.auto += 5; this.run.upgrades.bot++; }
+                if(this.meta.unlocks.includes('p_click')) this.run.stats.click += 5;
+
+                document.getElementById('bios-screen').classList.remove('active');
+                this.playBootSequence(() => {
+                    document.getElementById('game-interface').classList.add('active');
+                    this.run.active = true;
+                    this.renderRunUI();
+                    
+                    // Döngüler
+                    this.intervals.push(setInterval(() => this.loop(), 1000/60));
+                    this.intervals.push(setInterval(() => this.increaseMulti(), 10000));
+                });
+            },
+
+            playBootSequence(cb) {
+                const scr = document.getElementById('boot-screen');
+                scr.style.display = 'flex';
+                scr.innerHTML = '';
+                const lines = ["KERNEL INIT...", "MOUNTING VOLUMES...", "LOADING DRIVERS...", "SYSTEM READY."];
                 let i = 0;
                 const int = setInterval(() => {
                     if(i < lines.length) {
-                        overlay.innerHTML += `<div class="boot-line">${lines[i]}</div>`;
+                        scr.innerHTML += `<div class="boot-line">> ${lines[i]}</div>`;
                         i++;
                     } else {
                         clearInterval(int);
-                        AudioSys.playBoot(); // PLAY SOUND
-                        setTimeout(() => {
-                            overlay.style.display = 'none';
-                            callback();
-                        }, 1000);
+                        audio.bootSound();
+                        setTimeout(() => { scr.style.display = 'none'; cb(); }, 1000);
                     }
-                }, 400);
+                }, 500);
             },
 
-            // --- CORE LOOP ---
+            // --- OYUN DÖNGÜSÜ ---
             loop() {
                 if(!this.run.active) return;
                 const dt = 1/60;
 
-                // 1. Passive Income
-                if(this.run.stats.passive > 0) {
-                    this.run.money += (this.run.stats.passive * dt) * this.run.multiplier;
-                }
+                // Pasif Gelir
+                if(this.run.stats.passive > 0) this.run.money += (this.run.stats.passive * dt) * this.run.multiplier;
 
-                // 2. Bot Logic (Auto Hack + HEAT GENERATION)
+                // Botlar (Risk üretir!)
                 if(this.run.stats.auto > 0) {
                     this.run.breach += (this.run.stats.auto * dt) * this.run.multiplier;
-                    // Bots generate risk!
                     const t = TARGETS[this.run.targetId];
-                    this.run.risk += (this.run.stats.auto * 0.05 * t.sec * dt);
+                    // Botlar saniyede güvenlik seviyesinin %5'i kadar risk üretir
+                    this.run.risk += (this.run.stats.auto * 0.05 * t.sec * dt); 
                 }
 
-                // 3. Logic Checks
+                // Check
                 this.checkState();
-                this.ui.updateBars();
-
-                // 4. Warning FX
-                const alert = document.getElementById('alert-overlay');
-                if(this.run.risk > 80) {
-                    alert.style.opacity = (Math.sin(Date.now() / 100) + 1) / 4; // Pulse
-                    if(Math.random() > 0.95) AudioSys.sfx('warning');
-                } else {
-                    alert.style.opacity = 0;
-                }
+                this.updateUI();
             },
 
             increaseMulti() {
-                if(!this.run.active) return;
-                this.run.multiplier += 0.3;
-                document.getElementById('multi-display').innerText = this.run.multiplier.toFixed(1);
+                if(this.run.active) this.run.multiplier += 0.3;
             },
 
-            // --- ACTIONS ---
+            // --- AKSİYONLAR ---
             actionHack(e) {
                 if(!this.run.active) return;
                 const t = TARGETS[this.run.targetId];
                 
-                // Breach
                 this.run.breach += this.run.stats.click * this.run.multiplier;
-                
-                // Risk (Manual clicks add heat)
-                this.run.risk += t.sec * 1.2;
+                this.run.risk += t.sec * 1.5; // Manuel tıklama ısıtır
 
-                // FX
-                AudioSys.sfx('click');
+                audio.sfx('click');
+                this.spawnParticle(e.clientX, e.clientY, `+${Math.floor(this.run.stats.click)}`);
+                
+                // Buton Animasyonu
                 const btn = document.getElementById('hack-btn');
                 btn.style.transform = "scale(0.95)";
-                setTimeout(() => btn.style.transform = "scale(1)", 50);
+                setTimeout(()=>btn.style.transform="scale(1)", 50);
 
                 this.checkState();
             },
 
             actionCool(e) {
-                if(!this.run.active) return;
-                if(this.run.risk <= 0) return;
-
-                // Manual Flush reduces risk significantly
-                this.run.risk -= this.run.stats.coolPower;
+                if(!this.run.active || this.run.risk <= 0) return;
+                
+                this.run.risk -= this.run.stats.cool;
                 if(this.run.risk < 0) this.run.risk = 0;
-
-                // FX
-                AudioSys.sfx('cool');
+                
+                audio.sfx('cool');
                 const btn = document.getElementById('cool-btn');
                 btn.style.transform = "translateY(5px)";
-                setTimeout(() => btn.style.transform = "translateY(0)", 100);
-
-                // Particles
-                for(let i=0; i<5; i++) {
-                    const p = document.createElement('div');
-                    p.className = 'steam-particle';
-                    p.style.left = (e.clientX + (Math.random()-0.5)*50) + "px";
-                    p.style.top = (e.clientY + (Math.random()-0.5)*50) + "px";
-                    document.body.appendChild(p);
-                    setTimeout(() => p.remove(), 1000);
-                }
+                setTimeout(()=>btn.style.transform="translateY(0)", 100);
             },
 
             buy(id) {
-                const upg = UPGRADES.find(u => u.id === id);
-                const lvl = this.run.upgrades[id];
-                const cost = Math.floor(upg.base * Math.pow(upg.mult, lvl));
-
+                const u = UPGRADES.find(x => x.id === id);
+                const cost = Math.floor(u.base * Math.pow(u.mult, this.run.upgrades[id]));
+                
                 if(this.run.money >= cost) {
                     this.run.money -= cost;
                     this.run.upgrades[id]++;
+                    
+                    if(id==='cpu') this.run.stats.click += 3;
+                    if(id==='bot') this.run.stats.auto += 5;
+                    if(id==='cool') this.run.stats.cool += 5;
+                    if(id==='mine') this.run.stats.passive += 15;
 
-                    // Apply
-                    if(id === 'cpu') this.run.stats.click += 3;
-                    if(id === 'bot') this.run.stats.auto += 5;
-                    if(id === 'cool') this.run.stats.coolPower += 5; // Better flush
-                    if(id === 'mine') this.run.stats.passive += 15;
-
-                    AudioSys.sfx('money');
-                    this.ui.renderShop();
+                    audio.sfx('money');
+                    this.renderRunUI();
                 } else {
-                    AudioSys.sfx('error');
+                    audio.sfx('error');
                 }
             },
 
@@ -524,14 +492,14 @@
                 this.run.targetId = id;
                 this.run.breach = 0;
                 this.run.risk = 0;
-                this.ui.renderTargets();
+                this.renderRunUI();
             },
 
-            // --- GAME LOGIC ---
+            // --- MANTIK ---
             checkState() {
                 const t = TARGETS[this.run.targetId];
 
-                // Success
+                // Başarı
                 if(this.run.breach >= t.hp) {
                     this.run.breach = 0;
                     this.run.money += Math.floor(t.reward * this.run.multiplier);
@@ -540,14 +508,12 @@
                     if(this.run.xp >= 100 * this.run.lvl) {
                         this.run.lvl++;
                         this.run.xp = 0;
-                        this.ui.renderTargets();
+                        this.renderRunUI(); // Yeni hedefler açılabilir
                     }
-                    
-                    AudioSys.sfx('money');
-                    this.ui.updateGlobal();
+                    audio.sfx('money');
                 }
 
-                // SYSTEM CRASH
+                // Çökme
                 if(this.run.risk >= 100) {
                     this.triggerCrash();
                 }
@@ -556,111 +522,108 @@
             triggerCrash() {
                 this.run.risk = 0;
                 this.run.strikes--;
-                this.run.multiplier = 1.0; // PENALTY: Reset Multiplier
-                AudioSys.sfx('error');
+                this.run.multiplier = 1.0; // CEZA: Çarpan sıfırlanır
+                this.run.active = false;
+                audio.sfx('error');
 
-                // UI Updates
-                this.ui.updateGlobal();
-                document.getElementById('multi-display').innerText = "1.0";
-                
-                // Overlay Boot
-                this.run.active = false; // Pause logic
-                this.triggerBoot(() => {
-                    if(this.run.strikes <= 0) {
-                        this.gameOver();
-                    } else {
-                        this.run.active = true; // Resume
-                    }
-                });
+                if(this.run.strikes <= 0) {
+                    this.gameOver();
+                } else {
+                    // Mavi ekran / Reboot efekti
+                    this.playBootSequence(() => {
+                        this.run.active = true;
+                    });
+                }
             },
 
             gameOver() {
-                this.timers.forEach(clearInterval);
-                this.timers = [];
+                this.intervals.forEach(clearInterval);
+                this.intervals = [];
                 document.getElementById('game-interface').classList.remove('active');
                 
-                // Convert Legacy
-                const earned = Math.floor(this.run.money / 100);
-                this.meta.lp += earned;
-                localStorage.setItem('cyber_shock_save', JSON.stringify(this.meta));
-                
-                // Return to BIOS
-                document.getElementById('bios-lp').innerText = this.meta.lp;
+                const lpGain = Math.floor(this.run.money / 100) + (this.run.lvl * 2);
+                this.meta.lp += lpGain;
+                this.saveMeta();
+
                 document.getElementById('bios-screen').classList.add('active');
-                alert(`BAĞLANTI SONLANDI. KAZANILAN MİRAS PUANI: ${earned}`);
+                alert(`BAĞLANTI KAYBEDİLDİ. TOPLAM LEGACY PUANI: +${lpGain}`);
             },
 
-            // --- UI RENDERER ---
-            ui: {
-                updateGlobal() {
-                    document.getElementById('money-display').innerText = Math.floor(game.run.money).toLocaleString();
-                    document.getElementById('lvl-display').innerText = game.run.lvl;
-                    document.getElementById('strikes-display').innerText = game.run.strikes;
-                    document.getElementById('passive-display').innerText = (game.run.stats.passive * game.run.multiplier).toFixed(1) + "/sn";
-                },
-                
-                updateBars() {
-                    if(!game.run.active) return;
-                    document.getElementById('money-display').innerText = Math.floor(game.run.money).toLocaleString(); // Smooth
-
-                    const t = TARGETS[game.run.targetId];
-                    const bPct = Math.min(100, (game.run.breach / t.hp) * 100);
-                    document.getElementById('breach-bar').style.width = bPct + "%";
-                    document.getElementById('breach-txt').innerText = Math.floor(bPct) + "%";
-
-                    document.getElementById('risk-bar').style.width = Math.min(100, game.run.risk) + "%";
-                    document.getElementById('risk-txt').innerText = Math.floor(game.run.risk) + "%";
-
-                    const xpPct = (game.run.xp / (100 * game.run.lvl)) * 100;
-                    document.getElementById('xp-bar').style.width = xpPct + "%";
-
-                    // Visuals
-                    const riskBar = document.getElementById('risk-bar');
-                    if(game.run.risk > 80) riskBar.style.backgroundColor = "var(--danger)";
-                    else riskBar.style.backgroundColor = "var(--warn)";
-                },
-
-                renderTargets() {
-                    const list = document.getElementById('target-list');
-                    list.innerHTML = "";
-                    TARGETS.forEach(t => {
-                        const locked = game.run.lvl < t.req;
-                        const active = game.run.targetId === t.id;
-                        list.innerHTML += `
-                            <div class="list-card ${locked?'locked':''} ${active?'active':''}"
-                                 onclick="${!locked ? `game.logic.setTarget(${t.id})` : ''}">
-                                <div class="card-icon">${t.icon}</div>
-                                <div class="card-info">
-                                    <div class="card-title">${t.name}</div>
-                                    <div class="card-meta"><span>Güvenlik x${t.sec}</span><span>${t.reward} ₿</span></div>
-                                </div>
+            // --- UI ---
+            renderRunUI() {
+                // Hedefler
+                const tList = document.getElementById('target-list');
+                tList.innerHTML = "";
+                TARGETS.forEach(t => {
+                    const locked = this.run.lvl < t.req;
+                    const active = this.run.targetId === t.id;
+                    tList.innerHTML += `
+                        <div class="list-item ${locked?'locked':''} ${active?'active':''}"
+                             onclick="${!locked ? `game.setTarget(${t.id})` : ''}">
+                            <div class="item-icon">${t.icon}</div>
+                            <div class="item-details">
+                                <div class="item-title">${t.name}</div>
+                                <div class="item-sub"><span>GÜVENLİK: x${t.sec}</span><span>${t.reward} ₿</span></div>
                             </div>
-                        `;
-                    });
-                },
+                        </div>
+                    `;
+                });
 
-                renderShop() {
-                    const list = document.getElementById('shop-list');
-                    list.innerHTML = "";
-                    UPGRADES.forEach(u => {
-                        const lvl = game.run.upgrades[u.id];
-                        const cost = Math.floor(u.base * Math.pow(u.mult, lvl));
-                        const afford = game.run.money >= cost;
-                        list.innerHTML += `
-                            <div class="list-card" style="opacity:${afford?1:0.5}" onclick="game.buy('${u.id}')">
-                                <div class="card-icon">${u.icon}</div>
-                                <div class="card-info">
-                                    <div class="card-title">${u.name} (Lvl ${lvl})</div>
-                                    <div class="card-meta"><span>${u.desc}</span><span style="color:#ffcc00">${cost} ₿</span></div>
-                                </div>
+                // Market
+                const sList = document.getElementById('shop-list');
+                sList.innerHTML = "";
+                UPGRADES.forEach(u => {
+                    const cost = Math.floor(u.base * Math.pow(u.mult, this.run.upgrades[u.id]));
+                    const canBuy = this.run.money >= cost;
+                    sList.innerHTML += `
+                        <div class="list-item" style="opacity:${canBuy?1:0.5}" onclick="game.buy('${u.id}')">
+                            <div class="item-icon">${u.icon}</div>
+                            <div class="item-details">
+                                <div class="item-title">${u.name} (Lvl ${this.run.upgrades[u.id]})</div>
+                                <div class="item-sub"><span>${u.desc}</span><span style="color:${canBuy?'#ffcc00':'#555'}">${cost} ₿</span></div>
                             </div>
-                        `;
-                    });
+                        </div>
+                    `;
+                });
+
+                // Strikes
+                const sBox = document.getElementById('strikes-cont');
+                sBox.innerHTML = "";
+                for(let i=0; i<10; i++) {
+                    sBox.innerHTML += `<div class="strike ${i<this.run.strikes?'on':''}"></div>`;
                 }
+            },
+
+            updateUI() {
+                document.getElementById('money-display').innerText = Math.floor(this.run.money).toLocaleString();
+                document.getElementById('multi-display').innerText = this.run.multiplier.toFixed(1);
+                document.getElementById('lvl-display').innerText = this.run.lvl;
+                document.getElementById('passive-display').innerText = (this.run.stats.passive * this.run.multiplier).toFixed(1) + "/sn";
+
+                const t = TARGETS[this.run.targetId];
+                const bPct = Math.min(100, (this.run.breach / t.hp) * 100);
+                document.getElementById('breach-bar').style.width = bPct + "%";
+                document.getElementById('breach-txt').innerText = Math.floor(bPct) + "%";
+
+                document.getElementById('risk-bar').style.width = Math.min(100, this.run.risk) + "%";
+                document.getElementById('risk-txt').innerText = Math.floor(this.run.risk) + "%";
+
+                // Uyarı Efekti
+                const alert = document.getElementById('alert-layer');
+                if(this.run.risk > 80) alert.style.opacity = (Math.sin(Date.now()/100)+1)/2 * 0.5;
+                else alert.style.opacity = 0;
+            },
+
+            spawnParticle(x, y, txt) {
+                const el = document.createElement('div');
+                el.className = 'particle';
+                el.innerText = txt;
+                el.style.left = (x-10)+'px'; el.style.top = (y-20)+'px'; el.style.color = 'var(--primary)';
+                document.body.appendChild(el);
+                setTimeout(()=>el.remove(), 1000);
             }
         };
 
-        // Initialize
         game.init();
 
     </script>
